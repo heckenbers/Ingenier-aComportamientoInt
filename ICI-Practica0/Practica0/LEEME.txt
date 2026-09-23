@@ -1,0 +1,25 @@
+Practica0  ·  Ingeniería de Comportamientos Inteligentes
+
+Proyecto de partida de la práctica 0. Requiere tener ya importado el
+proyecto MsPacManEngine (el otro zip): este lo referencia por su nombre,
+así que impórtalo primero.
+
+  1. Descomprime este zip junto a MsPacManEngine.
+  2. Eclipse > File > Import > General > Existing Projects into Workspace.
+  3. Ejecuta ExecutorTest como Java Application. Debería abrirse la ventana
+     del laberinto con una Ms. Pac-Man que se mueve al azar.
+
+Qué hay dentro:
+  src/ExecutorTest.java      el main que configura el Executor y lanza la
+                             partida
+  src/es/ucm/fdi/ici/c2627/practica0/grupoIndividual/
+                             MsPacManRandom.java y GhostsRandom.java, los
+                             controladores del ejercicio 1
+
+Lo que se entrega son dos clases nuevas en ese mismo paquete,
+MsPacMan.java y Ghosts.java, comprimidas en un zip llamado practica0.zip
+hecho desde la carpeta src (o sea, con la carpeta es en la raíz del zip).
+
+El enunciado completo, con los ejercicios y los criterios de entrega, está
+en la wiki de la asignatura (Prácticas > Práctica 0). El enlace está en el
+Campus Virtual.
