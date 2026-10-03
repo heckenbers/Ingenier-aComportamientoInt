@@ -1,7 +1,7 @@
 import es.ucm.fdi.ici.c2627.practica0.grupoIndividual.Ghosts;
 
 import es.ucm.fdi.ici.c2627.practica0.grupoIndividual.MsPacMan;
-
+import es.ucm.fdi.ici.c2627.practica0.grupoIndividual.MsPacManP1;
 import pacman.Executor;
 import pacman.controllers.GhostController;
 import pacman.controllers.HumanController;
@@ -18,7 +18,7 @@ public class ExecutorTest {
                 .build();
 
         //PacmanController pacMan = new MsPacManRandom();
-        PacmanController pacMan = new MsPacMan();
+        PacmanController pacMan = new MsPacManP1();
         GhostController ghosts = new Ghosts();
         
         System.out.println( 
