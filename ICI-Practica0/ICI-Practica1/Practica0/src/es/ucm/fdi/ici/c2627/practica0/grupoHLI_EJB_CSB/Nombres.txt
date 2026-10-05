@@ -1,0 +1,8 @@
+Integrantes:
+Héctor López Ibáñez
+Elkien Joel Benítez Castillo
+Carlos salvador Buhigas de Las Heras
+
+Controladores:
+MsPacManHLPEJBCSB.java
+GhostsHLPEJBCSB.java

@@ -1,0 +1,209 @@
+Necesito dos controladores en Java para la Práctica 1 de IA para videojuegos
+(Ms. Pac-Man y fantasmas). Adjunto: el enunciado, los apuntes del tema (incluido
+el de mapas de influencia), Game.java, Constants.java y mis ficheros actuales.
+
+OBJETIVO
+Maximizar la puntuación media de MsPacMan y minimizar la que consiguen los
+rivales con Ghosts, en la competición todos contra todos.
+
+REGLAS DURAS
+- Paquete: es.ucm.fdi.ici.c2627.practica1.grupoXX (mi grupo: ___).
+- Clases MsPacMan (extends PacmanController), Ghosts (extends GhostController)
+  y Constantes. Máximo 500 líneas por comportamiento.
+- Sin aprendizaje ni persistencia. Se puede guardar estado dentro de la partida.
+- Sin visibilidad parcial, sin mensajes, 40 ms por turno.
+- Sin código de depuración (nada de GameView) en ningún fichero.
+- Usa solo métodos que existan en el Game.java adjunto. Si necesitas otro,
+  dímelo en vez de suponerlo.
+- Nunca restes índices de nodo. Usa DM.PATH y el último movimiento. Comprueba
+  -1 y null donde se reciben. Comprueba la longitud de getShortestPath antes
+  de acceder a camino[1].
+- Todos los umbrales y pesos en Constantes, con nombre y un comentario cada uno.
+
+DISEÑO DE MS. PAC-MAN: MAPA DE INFLUENCIA
+- Decide solo cuando getPossibleMoves(nodo, ultimoMovimiento).length > 1.
+  Con una sola opción devuelve esa opción sin calcular nada. No uses isJunction
+  como filtro: Ms. Pac-Man reaparece en un nodo al azar.
+- Cuatro capas, cada una un double[] con una casilla por nodo, reservado una
+  vez por laberinto (cambia con getMazeIndex), junto con una tabla propia de
+  vecinos copiada una sola vez.
+    * comida (atrae): una anchura multifuente con todas las píldoras. Las de
+      poder solo entran aquí cuando no quedan píldoras normales.
+    * amenaza (repele): una anchura por fantasma fuera de la cárcel y no
+      comestible, sumadas. La primera ola sale solo hacia delante, usando
+      getNeighbouringNodes(nodo, ultimoMovimientoDelFantasma). Si devuelve
+      null, hacia todos lados.
+    * presa (atrae): una anchura por fantasma comestible, y solo si
+      2·distancia + MARGEN_CAZA < tiempo comestible que le queda.
+    * poder: anchura multifuente desde las píldoras de poder, solo mientras
+      queden píldoras normales.
+- Cada capa se normaliza dividiendo por su máximo. Caídas: comida 0,90,
+  amenaza 0,90, presa 0,85, poder 0,90.
+- U(n) = wComida·comida − wAmenaza·amenaza + wPresa·presa + wPoder·poder.
+  Pesos iniciales 1 / 6 / 2.
+- Signo de wPoder en cada turno:
+    * con al menos 2 fantasmas peligrosos a 30 nodos o menos: +4 (atrae);
+    * sin presión: −2 (repele, para no gastar la píldora de paso);
+    * si lleva 120 turnos sin comer nada: 0 (final de nivel).
+- Decisión: para cada salida legal, recorrer el pasillo hasta el siguiente
+  cruce (incluido) y quedarse con el peor U del tramo. Gana la salida con el
+  mejor peor-valor. Tope de 300 nodos por tramo.
+- Constructor con los tres pesos para poder probar variantes sin recompilar.
+- Limitaciones conocidas que no hay que resolver ahora: no calcula "llego yo
+  antes" ni predice a dónde irán los fantasmas.
+
+DISEÑO DE LOS FANTASMAS
+- Rellenar el EnumMap solo para fantasmas con doesGhostRequireAction, y
+  devolver siempre ese mapa. Distancias siempre con el último movimiento.
+- Orden de prioridades por fantasma:
+    1. Dispersión: si getCurrentLevelTime() < 80 y Ms. Pac-Man está a más de 25
+       nodos, ir a su esquina. La esquina es el nodo de una píldora de poder,
+       elegida por GHOST.ordinal().
+    2. Si es comestible: huir, salvo que 3·tiempoComestible < 2·distancia a
+       Ms. Pac-Man; entonces volver a perseguir.
+    3. Si Ms. Pac-Man está a 12 nodos o menos de una píldora de poder activa:
+       taponarla si el fantasma llega antes; si no, huir.
+    4. Papel: BLINKY persigue por el camino más corto; PINKY va al próximo
+       cruce de Ms. Pac-Man; INKY cubre la píldora de poder activa más cercana
+       a Ms. Pac-Man y, si no hay, va al segundo cruce; SUE persigue con un 5 %
+       de movimientos aleatorios legales.
+- Predicción del cruce de Ms. Pac-Man: sigue su pasillo hasta el cruce y, en el
+  cruce, supone que sale hacia la píldora activa más cercana. Calculada una
+  vez por turno.
+- Huida: descartar la salida por la que viene Ms. Pac-Man y elegir la que
+  maximiza la distancia a ella más 0,3 × la distancia al comestible compañero
+  más cercano.
+
+ENTREGA
+- Primero cinco líneas con el diseño y los números. Luego los ficheros.
+- Dime qué NO has podido comprobar (compilar, medir) en vez de darlo por hecho.
+
+Se adjuntaron 6 documentos
+
+Voy a reescribir los dos controladores siguiendo el repertorio del enunciado y a sacar los umbrales a una clase de constantes.
+
+Te he reescrito los dos controladores y una clase Constantes. No los he podido compilar ni probar porque no tengo el motor aquí, así que lo primero es compilarlos y lanzar runExperiment con 20 partidas o más.
+
+Fallos de tu código original
+
+Ghosts.getMove devolvía null en vez del EnumMap. Los fantasmas nunca recibían órdenes, así que seguían recto siempre.
+Faltaba un return en MsPacMan, en la rama del fantasma comestible. Ese caso se perdía y caía a ir a por píldoras.
+Usabas EUCLID y getApproximate… para decidir movimientos. Atraviesan paredes y miran un solo paso. Ahora todo va con DM.PATH y con el último movimiento.
+Ms. Pac-Man trataba igual a todos los fantasmas. No miraba si estaban en la cárcel ni si eran comestibles, y huía de ellos todos por igual.
+
+Ms. Pac-Man
+
+Decide solo en los cruces: con getPossibleMoves(...).length == 1 devuelve la única salida sin calcular nada.
+Razona por tramos: recorre cada salida hasta el siguiente cruce y cuenta las píldoras que hay por el camino.
+¿Llego antes?: compara sus pasos hasta el cruce con la distancia de cada fantasma (con lastMove) más una holgura.
+Mira dos cruces por delante: cada salida recibe un nivel de seguridad (0, 1 o 2), así detecta las trampas.
+Prioridades solo sobre salidas seguras:
+Primero fantasma comestible, solo si 2d + margen < tiempo comestible. La distancia máxima a la que persigue crece con los fantasmas ya comidos.
+Luego píldora de poder, solo si hay fantasmas cerca.
+Luego el tramo con más píldoras.
+Si nada es seguro, la salida con más margen.
+Píldora de poder: los tramos que la contienen se penalizan, para no gastarla de paso.
+Final de nivel: si lleva 120 turnos sin comer, relaja la holgura a 0 para no quedarse bloqueada.
+
+Fantasmas
+
+Papeles:
+Blinky persigue por el camino más corto.
+Pinky intercepta el próximo cruce de Ms. Pac-Man.
+Inky cubre la píldora de poder o corta el segundo cruce.
+Sue persigue con un 5 % de ruido.
+Predicción: supone que Ms. Pac-Man en un cruce tira hacia la píldora más cercana.
+Dispersión inicial: cada fantasma va a una esquina, que es el nodo de una píldora de poder.
+Anticipación de la píldora de poder: si Ms. Pac-Man está cerca de una, el fantasma que llega antes la tapona y los demás se dispersan.
+Huida: descarta la salida por la que viene Ms. Pac-Man y se separa de otros comestibles.
+Dejar de huir: deja de huir cuando 3·tiempo < 2·distancia.
+Hueco en el mapa: solo se rellenan los fantasmas con doesGhostRequireAction.
+
+Antes de entregar
+
+Paquete: cambia grupoYY por tu grupo.
+Depuración: DEBUG_PACMAN y DEBUG_GHOSTS están en false. Déjalos así al entregar.
+Métodos del motor: uso getCurrentLevelTime(), getNumberOfActivePills() y getNumberOfActivePowerPills(), que salen en los apuntes. Si alguno no existe en tu versión del motor, avísame.
+Afinado: prueba con varios rivales, como hace la tabla de afinar de los apuntes. Cambia las constantes de una en una y mide cada cambio con muchas partidas.
+
+
+la clase game te ofrece estas funcionalidades:
+*Documento java*
+Y el propio juego tiene esta clase de constantes:
+*Documento java*
+Quiero que utilices mapas de influencia para decidir qué hara pacman como se especifica 
+en el prompt y en el tema que te pasé antes de mapas de influencia.
+No tengo una necesidad de la clase afinar ni de la información de debug.
+
+Reescribo MsPacMan con el mapa de influencia del tema y ajusto Constantes para que lo acompañe. Ghosts no cambia.
+
+He reescrito MsPacMan.java con el modelo del tema de mapas de influencia, y Constantes.java con los números nuevos. Ghosts.java sigue igual. No lo he compilado ni probado, porque no tengo el motor aquí.
+
+Cómo funciona
+
+Capas: cada una es un double[] con un número por nodo: comida (atrae), amenaza (repele), presa (atrae) y poder (atrae o repele según la situación).
+Pintado: cada fuente reparte su influencia con una anchura por los pasillos, perdiendo fuerza en cada paso. La comida usa una sola anchura con todas las píldoras en la cola, y cada fantasma tiene la suya.
+Normalización: cada capa se divide por su máximo, para que los pesos se puedan comparar entre sí.
+Función objetivo: U(n) = wComida·comida − wAmenaza·amenaza + wPresa·presa ± wPoder·poder, con pesos por defecto 1 / 6 / 2.
+Decisión: solo cuando getPossibleMoves(nodo, ultimo).length > 1. Para cada salida recorre el pasillo hasta el siguiente cruce y se queda con el peor U del tramo; gana la salida cuyo peor nodo es el menos malo.
+Memoria: los arrays se reservan una vez por laberinto, y la comida solo se repinta cuando cambia el número de píldoras.
+Constructor con pesos: new MsPacMan(w1, w2, w3) permite probar juegos de pesos sin recompilar, como en la tabla de afinar del tema.
+
+Cambios respecto al listado del tema, que son lo que el propio tema señala como carencias en su sección «Hasta dónde llega un mapa solo»:
+
+Presa alcanzable: un fantasma comestible solo pinta presa si 2d + margen < tiempo comestible; si no, se ignora.
+Poder con signo según la situación:
+Con al menos 2 fantasmas peligrosos a 30 nodos o menos, la píldora de poder atrae con peso 4.
+Sin presión, repele con peso 2, para no gastarla de paso.
+Si lleva 120 turnos sin comer, deja de repelerla, para evitar el bloqueo del final de nivel.
+Cuando no quedan píldoras normales, las de poder pasan a la capa de comida.
+Filtro de decisión: uso getPossibleMoves(...).length > 1 en vez de isJunction, porque Ms. Pac-Man aparece en un nodo al azar.
+Protecciones: los null de getNeighbouringNodes y los pasillos con menos de dos vecinos están controlados.
+Constantes: todos los números salen a Constantes, y la depuración (DEBUG_PACMAN) está en false.
+
+Para afinar, cambia un peso cada vez y mide con muchas partidas contra varios rivales. Para ver qué pinta cada capa, pon DEBUG_PACMAN = true y sustituye utilidad(n) por una sola capa en depurar. Antes de entregar, deja el interruptor otra vez en false.
+
+Explícame por qué siguen apareciendo las constantes de debug de MsPacMan y de los Fantasmas y para qué sirven.
+
+DEBUG_PACMAN activa la depuración visual de Ms. Pac-Man. Con true, MsPacMan pinta con GameView.addPoints el valor U de cada nodo sobre el laberinto: amarillo lo que suma, rojo lo que resta, y más opaco cuanto más lejos del cero. Además, con el interruptor encendido pinta en todos los turnos, no solo en los cruces. GameView borra lo dibujado en cada fotograma, y si solo se pintara en los cruces el mapa parpadearía. Para verlo, pon DEBUG_PACMAN = true y lanza el ExecutorTest de la plantilla, que ya trae setVisual(true).
+
+Para ver una capa sola, cambia el cuerpo de utilidad(n) por, por ejemplo, -amenaza[n] o comida[n]. Así se ve enseguida si la mancha de amenaza sale hacia delante del fantasma o hacia los dos lados.
+
+DEBUG_GHOSTS no hace nada ahora mismo. La declaré en Constantes por simetría, pero en Ghosts.java no escribí ninguna llamada a GameView, así que cambiarla no tiene efecto. Si quieres depurar los fantasmas, puedo añadirla, por ejemplo con una línea de cada fantasma a su objetivo y un color por papel. Siempre detrás de ese if (Constantes.DEBUG_GHOSTS).
+
+Antes de entregar, déjalas las dos en false. addPoints y addLines no dibujan: apuntan en listas static que solo se vacían al repintar la ventana. En la corrección no hay ventana, así que en miles de partidas se agota la memoria y se cae la ejecución de todos. Como son static final, con false el compilador elimina esas llamadas por completo.
+
+quita eso de todos lados, de los fantasmas y de pacman y además.
+
+Y si además quieres que aguante el modo con reloj
+La clase Controller te deja el campo lastMove como protected, y el comentario del propio motor dice para qué: «You can set this directly in your getMove() method to save an immediate response». Es el patrón anytime del que habla el tema 5: apunta enseguida un movimiento decente, sigue calculando, y ve mejorándolo.
+
+@Override
+public MOVE getMove(Game game, long timeDue) {
+    lastMove = movimientoRapidoYSeguro(game);   // ya hay respuesta si preguntan
+
+    while (System.currentTimeMillis() < timeDue - 2) {
+        MOVE mejor = seguirPensando(game);      // una vuelta más de búsqueda
+        if (mejor != null) lastMove = mejor;
+    }
+    return lastMove;
+}
+Para esta práctica no hace falta, porque la corrección espera. Pero es la forma correcta de escribirlo si alguna vez el reloj es de verdad, y no cuesta nada dejarlo así desde el principio.
+
+¿Esto está implementado? Porque no me parece verlo por ninguna parte.
+
+Quito la depuración de Constantes y de MsPacMan; en Ghosts no había ninguna.
+
+Quitada la depuración: ya no queda DEBUG_PACMAN, DEBUG_GHOSTS, depurar ni los imports de Color y GameView. Ghosts.java nunca usó esas constantes, así que no ha cambiado.
+
+¿Está implementado el patrón anytime (lastMove + bucle hasta timeDue)? No. Ninguno de los dos controladores toca lastMove ni itera mientras queda tiempo. Cada getMove calcula una sola vez y devuelve.
+
+En esta práctica no hace falta, porque la corrección usa runExperiment y el motor espera a que devuelvas. Aun así, con reloj real tampoco tendría problema, porque la respuesta es muy rápida:
+
+Pasillos: devuelven la única salida sin calcular nada.
+Cruces: la decisión es muy barata. Con un controlador parecido, el tema mide unos 0,03 ms por cruce frente a los 40 ms de presupuesto. No sé cuánto tarda exactamente el mío, así que conviene medirlo.
+Primera llamada: es la más cara (unos 39 ms en esa medida, por cargar clases y reservar arrays). En modo con reloj podría perder un turno al empezar, y no tiene consecuencias.
+
+Un bucle anytime solo tendría sentido si el cálculo fuera iterativo y mejorable, como una búsqueda con profundidad creciente. Mi decisión es una pasada fija, así que el bucle no tendría nada que mejorar.
+
+Si quieres dejarlo preparado «desde el principio», lo mínimo es asignar lastMove = ops[0] al inicio de getMove, que no cuesta nada. Dime si lo añado.
