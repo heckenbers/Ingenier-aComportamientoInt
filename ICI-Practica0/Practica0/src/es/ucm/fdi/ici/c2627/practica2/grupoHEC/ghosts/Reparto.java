@@ -1,12 +1,13 @@
 package es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 
 import pacman.game.Constants.GHOST;
 
 /**
  * Reparto del equipo en un turno: el papel de cada fantasma en NORMAL, la esquina de cada
- * comestible y el compañero en el que se refugia. Lo calcula GhostsInput y lo guarda el
+ * comestible, el compañero en el que se refugia y quién está en PELIGRO POR PÍLDORA. Lo calcula GhostsInput y lo guarda el
  * controlador para dos cosas:
  *  - pasárselo al GhostsInput del turno siguiente (histéresis: el que tiene un papel lo conserva);
  *  - que las acciones sepan su destino (las acciones solo reciben el Game, no el Input).
@@ -19,6 +20,15 @@ public class Reparto {
 	private final EnumMap<GHOST, Papel> papeles = new EnumMap<>(GHOST.class);
 	private final EnumMap<GHOST, Integer> esquinas = new EnumMap<>(GHOST.class);
 	private final EnumMap<GHOST, GHOST> refugios = new EnumMap<>(GHOST.class);
+	private final EnumSet<GHOST> enPeligro = EnumSet.noneOf(GHOST.class);
+
+	/**
+	 * Si el fantasma está en PELIGRO POR PÍLDORA. Se guarda porque la salida de PELIGRO tiene
+	 * histéresis: para saber si sigue dentro hay que saber si lo estaba el turno anterior.
+	 */
+	public boolean enPeligro(GHOST g) {
+		return enPeligro.contains(g);
+	}
 
 	/** Papel del fantasma en NORMAL, o NINGUNO si no está en NORMAL. */
 	public Papel papel(GHOST g) {
@@ -51,4 +61,6 @@ public class Reparto {
 	void asignarRefugio(GHOST g, GHOST companero) { refugios.put(g, companero); }
 
 	boolean esquinaOcupada(int nodo) { return esquinas.containsValue(nodo); }
+
+	void marcarPeligro(GHOST g) { enPeligro.add(g); }
 }

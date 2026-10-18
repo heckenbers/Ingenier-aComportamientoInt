@@ -25,18 +25,27 @@ public final class GhostsConstants {
 	 * Distancia de Ms. Pac-Man a una power pill activa para considerarla amenazada:
 	 * la "pillAmenazada" de las notas (*I) y (*III).
 	 */
-	public static final int RADIO_PILL = 20;
+	public static final int RADIO_PILL = 30;          // antes 20: la amenaza se detectaba tarde
 
 	/** (*I) Distancia del fantasma a la pill amenazada para entrar en PELIGRO POR PÍLDORA. */
-	public static final int RADIO_PELIGRO = 30;
-
-	/** (*III) Holgura en "llega antes a la PP": empatar es lo peor que puede pasar. */
-	public static final int MARGEN_PP = 4;
+	public static final int RADIO_PELIGRO = 45;       // antes 30: huían cuando ya estaban demasiado cerca
 
 	/**
-	 * Ventaja extra que se exige para pasar de HUIDA EFICIENTE a BLOQUEAR, y margen para
-	 * salir de PELIGRO ("Ms. Pacman se aleja de la PP"), para no oscilar en el límite.
+	 * (*III) Holgura en "llega antes a la PP". Basta con no empatar: si el fantasma llega
+	 * antes, aunque sea por poco, Ms. Pac-Man ya no puede comérsela sin chocar con él.
 	 */
+	public static final int MARGEN_PP = 1;            // antes 4: junto con la histeresis pedía 7 nodos de ventaja
+
+	/** Ventaja extra que se exige para pasar de HUIDA EFICIENTE a BLOQUEAR (no oscilar en el límite). */
+	public static final int HISTERESIS_BLOQUEO = 2;
+
+	/**
+	 * Un fantasma a esta distancia de la pill o menos ya la está guardando. Se mide sin tener
+	 * en cuenta su dirección: al llegar a la pill no puede pararse y la pasa, pero sigue al lado.
+	 */
+	public static final int RADIO_GUARDIA_PP = 4;
+
+	/** Margen para salir de PELIGRO ("Ms. Pacman se aleja de la PP"), para no oscilar en el límite. */
 	public static final int HISTERESIS_PP = 3;
 
 	// ---- NORMAL ---------------------------------------------------------------------------

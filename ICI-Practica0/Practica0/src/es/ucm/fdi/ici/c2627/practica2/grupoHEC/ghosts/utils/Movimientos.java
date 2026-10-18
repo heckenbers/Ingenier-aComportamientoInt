@@ -2,6 +2,7 @@ package es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.GhostsConstants;
 import pacman.game.Constants.GHOST;
@@ -97,6 +98,42 @@ public final class Movimientos {
 	}
 
 	// ---- Movimientos básicos ------------------------------------------------------
+
+	/**
+	 * Como irHacia, pero flanqueando: entre las salidas legales, prefiere las que llegan a
+	 * 'destino' sin pasar por ningún nodo de 'evitar', aunque su camino sea más largo.
+	 * Si todas pasan por alguno, se queda con la más corta (como irHacia).
+	 * El propio 'destino' no cuenta como cruce con 'evitar'.
+	 */
+	public static MOVE irHaciaFlanqueando(Game game, GHOST ghost, int destino, Set<Integer> evitar) {
+		int nodo = game.getGhostCurrentNodeIndex(ghost);
+		MOVE[] salidas = game.getPossibleMoves(nodo, game.getGhostLastMoveMade(ghost));
+		if (salidas.length == 0 || destino < 0) return MOVE.NEUTRAL;
+
+		MOVE mejor = null, mejorCualquiera = salidas[0];
+		int min = INALCANZABLE, minCualquiera = INALCANZABLE;
+		for (MOVE m : salidas) {
+			int vecino = game.getNeighbour(nodo, m);
+			int d = game.getShortestPathDistance(vecino, destino, m);
+			if (d < minCualquiera) {
+				minCualquiera = d;
+				mejorCualquiera = m;
+			}
+			if (d < min && !cruza(game, vecino, destino, m, evitar)) {
+				min = d;
+				mejor = m;
+			}
+		}
+		return mejor != null ? mejor : mejorCualquiera;
+	}
+
+	/** Si el camino más corto de 'desde' a 'destino' (sin darse la vuelta) pasa por algún nodo de 'evitar'. */
+	private static boolean cruza(Game game, int desde, int destino, MOVE ultimo, Set<Integer> evitar) {
+		if (desde != destino && evitar.contains(desde)) return true;
+		for (int n : game.getShortestPath(desde, destino, ultimo))
+			if (n != destino && evitar.contains(n)) return true;
+		return false;
+	}
 
 	/**
 	 * Salida legal que deja al fantasma más cerca de 'destino'. La distancia se mide desde

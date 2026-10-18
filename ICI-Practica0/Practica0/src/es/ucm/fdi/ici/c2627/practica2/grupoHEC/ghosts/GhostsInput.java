@@ -131,7 +131,19 @@ public class GhostsInput extends Input {
 	/** (*III) Llega a la pill antes que Ms. Pac-Man. Si deja de cumplirse: BLOQUEAR -> HUIDA. */
 	public boolean llegaAntesAPill(GHOST g) {
 		return pill >= 0 && !enCarcel.get(g)
-				&& (long) distAPill.get(g) + MARGEN_PP < distPacmanPill;
+				&& (long) distBloqueo(g) + MARGEN_PP < distPacmanPill;
+	}
+
+	/**
+	 * Distancia del fantasma a la pill para bloquear. Normalmente la de siempre (sin darse la
+	 * vuelta), pero si ya está junto a la pill (RADIO_GUARDIA_PP) cuenta la distancia real: al
+	 * llegar no puede pararse y la pasa de largo, y con la distancia "sin dar la vuelta" parecería
+	 * que está lejísimos y abandonaría el bloqueo justo cuando lo ha conseguido.
+	 */
+	private int distBloqueo(GHOST g) {
+		if (pill < 0 || enCarcel.get(g)) return Movimientos.INALCANZABLE;
+		int cerca = game.getShortestPathDistance(game.getGhostCurrentNodeIndex(g), pill);
+		return cerca <= RADIO_GUARDIA_PP ? cerca : distAPill.get(g);
 	}
 
 	/**
@@ -139,11 +151,11 @@ public class GhostsInput extends Input {
 	 * cercano a la pill. Así, como mucho un fantasma empieza a bloquear cada turno.
 	 */
 	public boolean esBloqueador(GHOST g) {
-		if (!llegaAntesAPill(g) || (long) distAPill.get(g) + MARGEN_PP + HISTERESIS_PP >= distPacmanPill)
+		if (!llegaAntesAPill(g) || (long) distBloqueo(g) + MARGEN_PP + HISTERESIS_BLOQUEO >= distPacmanPill)
 			return false;
 		for (GHOST otro : FANTASMAS) {
 			if (otro == g || enCarcel.get(otro) || comestible.get(otro)) continue;
-			int d = distAPill.get(otro), mia = distAPill.get(g);
+			int d = distBloqueo(otro), mia = distBloqueo(g);
 			if (d < mia || (d == mia && otro.ordinal() < g.ordinal())) return false;
 		}
 		return true;
@@ -182,6 +194,7 @@ public class GhostsInput extends Input {
 
 	private Reparto repartir(Reparto anterior) {
 		Reparto r = new Reparto();
+		marcarPeligro(r, anterior);        // antes que los papeles: decide quién está en NORMAL
 		repartirPapeles(r, anterior);
 		repartirRefugios(r);
 		repartirEsquinas(r, anterior);
@@ -201,7 +214,7 @@ public class GhostsInput extends Input {
 	private void repartirPapeles(Reparto r, Reparto anterior) {
 		List<GHOST> libres = new ArrayList<>();
 		for (GHOST g : FANTASMAS)
-			if (enNormal(g)) libres.add(g);
+			if (enNormal(g, r)) libres.add(g);
 
 		ocupar(r, anterior, libres, Papel.PERSEGUIR, distAPacman);
 		ocupar(r, anterior, libres, Papel.INTERCEPTAR, distAPacman);
@@ -227,9 +240,24 @@ public class GhostsInput extends Input {
 		libres.remove(mejor);
 	}
 
-	/** En NORMAL según el juego: fuera de la cárcel, no comestible o fuera de peligro, y sin pill amenazada cerca. */
-	private boolean enNormal(GHOST g) {
-		return !enCarcel.get(g) && puedeVolverANormal(g) && !cercaDePillAmenazada(g);
+	/** En NORMAL según la máquina: fuera de la cárcel, no comestible (o fuera de peligro) y no en PELIGRO. */
+	private boolean enNormal(GHOST g, Reparto r) {
+		return !enCarcel.get(g) && puedeVolverANormal(g) && !r.enPeligro(g);
+	}
+
+	/**
+	 * Quién está en PELIGRO POR PÍLDORA, con las mismas reglas que la máquina:
+	 *  - entra con (*I) cercaDePillAmenazada;
+	 *  - sigue dentro mientras Ms. Pac-Man no se aleje de la pill (histéresis), no sea
+	 *    comestible (se la ha comido) y no esté en la cárcel.
+	 * Así un fantasma no recibe un papel de NORMAL mientras su máquina sigue en PELIGRO.
+	 */
+	private void marcarPeligro(Reparto r, Reparto anterior) {
+		for (GHOST g : FANTASMAS) {
+			boolean sigue = anterior.enPeligro(g) && !pacmanLejosDePill()
+					&& !comestible.get(g) && !enCarcel.get(g);
+			if (cercaDePillAmenazada(g) || sigue) r.marcarPeligro(g);
+		}
 	}
 
 	/**

@@ -9,10 +9,10 @@ public class ExecutorTest {
 
     // true  -> una partida visual (para ver cómo se mueven MsPacMan y los fantasmas)
     // false -> experimento de TRIALS partidas sin ventana, con la media de puntos
-    private static final boolean VISUAL = true;
+    private static final boolean VISUAL = false;
 
     private static final int TRIALS = 200;  // partidas del experimento
-    private static final int DELAY = 30;    // ms entre ticks en modo visual (más alto = más lento)
+    private static final int DELAY = 70;    // ms entre ticks en modo visual (más alto = más lento)
 
     public static void main(String[] args) {
         PacmanController pacMan = new MsPacManAvanzado();   // o new MsPacManBasico() / new MsPacManAvanzado()
