@@ -7,5 +7,8 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/MsPacManEngine"/>
+	<classpathentry kind="lib" path="lib/rival-avanzado.jar"/>
+	<classpathentry kind="lib" path="lib/rival-basico.jar"/>
+	<classpathentry kind="lib" path="lib/rival-intermedio.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
