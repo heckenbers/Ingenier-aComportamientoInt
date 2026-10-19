@@ -14,14 +14,15 @@ import javax.swing.SwingUtilities;
 
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.GhostsConstants;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.GhostsInput;
+import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.Reparto.Papel;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.Reparto;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.EncerradoAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.comestible.DispersarseAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.comestible.HuidaEficienteAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.comestible.RefugiarseAction;
-import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.Reparto.Papel;
+import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.CazarAction;
+import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.CerrarPasoAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.InterceptarAction;
-import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.PatrullarPildorasAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.PerseguirAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.normal.VigilarPPAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.actions.peligro.BloquearPPAction;
@@ -35,8 +36,8 @@ import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.global.SeVuelv
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.global.VuelveANormalTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.normal.TienePapelTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.CercaDePPTransition;
-import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.PuedeBloquearPPTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.LlegaAntesAPPTransition;
+import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.PuedeBloquearPPTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.PacManSeAlejaDePPTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.transitions.peligro.SeComePPTransition;
 import es.ucm.fdi.ici.fsm.CompoundState;
@@ -51,7 +52,7 @@ import pacman.game.Game;
 /**
  * Controlador de los fantasmas: una máquina de estados por fantasma.
  *
- *   ENCERRADO <-> NORMAL (PERSEGUIR, INTERCEPTAR, VIGILAR PP, PATRULLAR PÍLDORAS)
+ *   ENCERRADO <-> NORMAL (PERSEGUIR, INTERCEPTAR, VIGILAR PP, CAZAR, CERRAR PASO)
  *   NORMAL    <-> COMESTIBLE (HUIDA EFICIENTE, REFUGIARSE EN COMPAÑERO, DISPERSARSE A ESQUINAS)
  *   NORMAL    <-> PELIGRO POR PÍLDORA (HUIDA EFICIENTE, BLOQUEAR POWER PILL)
  *   PELIGRO    -> COMESTIBLE
@@ -163,19 +164,21 @@ public class Ghosts extends GhostController {
 
 	/**
 	 * NORMAL (compuesto), empieza en PERSEGUIR. Nota *V: cada fantasma hace el papel que le da
-	 * el reparto de GhostsInput (perseguidor, interceptor, vigilante o patrulla). Desde cada
-	 * estado sale una flecha "Le toca X" hacia cada uno de los otros tres: 12 flechas.
+	 * el reparto de GhostsInput (perseguidor, interceptor, vigilante, cazador o, si puede
+	 * atraparla en su pasillo, cerrar paso). Desde cada estado sale una flecha "Le toca X"
+	 * hacia cada uno de los otros cuatro: 20 flechas.
 	 */
 	private CompoundState crearNormal(GHOST g, List<GraphFSMObserver> observadores) {
 		FSM normal = nuevaMaquina(g + " NORMAL", observadores);
 
-		Papel[] papeles = { Papel.PERSEGUIR, Papel.INTERCEPTAR, Papel.VIGILAR, Papel.PATRULLAR };
-		String[] nombres = { "PERSEGUIR", "INTERCEPTAR", "VIGILAR PP", "PATRULLAR PÍLDORAS" };
+		Papel[] papeles = { Papel.PERSEGUIR, Papel.INTERCEPTAR, Papel.VIGILAR, Papel.CAZAR, Papel.CERRAR };
+		String[] nombres = { "PERSEGUIR", "INTERCEPTAR", "VIGILAR PP", "CAZAR", "CERRAR PASO" };
 		SimpleState[] estados = {
 				new SimpleState(nombres[0], new PerseguirAction(g)),
 				new SimpleState(nombres[1], new InterceptarAction(g, repartoActual)),
 				new SimpleState(nombres[2], new VigilarPPAction(g)),
-				new SimpleState(nombres[3], new PatrullarPildorasAction(g)) };
+				new SimpleState(nombres[3], new CazarAction(g, repartoActual)),
+				new SimpleState(nombres[4], new CerrarPasoAction(g)) };
 
 		// El nombre lleva el origen porque no puede repetirse dentro de la máquina (el
 		// observador lo usa como identificador de la arista)

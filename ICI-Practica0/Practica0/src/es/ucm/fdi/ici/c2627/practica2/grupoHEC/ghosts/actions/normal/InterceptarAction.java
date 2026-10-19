@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import es.ucm.fdi.ici.Action;
+import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.GhostsConstants;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.Reparto;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.Reparto.Papel;
 import es.ucm.fdi.ici.c2627.practica2.grupoHEC.ghosts.utils.Movimientos;
@@ -13,13 +14,17 @@ import pacman.game.Constants.MOVE;
 import pacman.game.Game;
 
 /**
- * INTERCEPTAR: ir al cruce hacia el que se dirige Ms. Pac-Man (Movimientos.proximoCrucePacman),
- * flanqueando: por un camino que no comparta nodos con el del perseguidor ni pase por ella,
- * aunque sea más largo. Así el perseguidor empuja por detrás y el interceptor le corta el paso
- * por delante, en vez de ir los dos en fila por el mismo pasillo.
+ * INTERCEPTAR: cortarle el paso a Ms. Pac-Man por delante (Movimientos.intercepcion): el primer
+ * nodo de su camino al que el fantasma llega antes que ella. Si ella está cerca de una power
+ * pill, ese camino es el que lleva a la PP: así le corta el paso hacia ella. Si no, el de su
+ * siguiente cruce.
  *
- * Si no se puede prever el cruce (ella está en uno o parada), o el fantasma ya está en él,
- * va a por ella, también flanqueando. Si no hay ningún camino que flanquee, usa el más corto.
+ * Si hay punto de corte, va a él por el camino más corto (es con el que se calculó que
+ * llega antes). Si no lo hay, va flanqueando: por un camino que no comparta nodos con el del
+ * perseguidor ni pase por ella, aunque sea más largo, para no ir los dos en fila.
+ *
+ * Si el objetivo es ella misma o el fantasma ya está en él, va a por ella, también
+ * flanqueando. Si no hay ningún camino que flanquee, usa el más corto.
  */
 public class InterceptarAction implements Action {
 
@@ -36,10 +41,19 @@ public class InterceptarAction implements Action {
 		if (!game.doesGhostRequireAction(ghost)) return MOVE.NEUTRAL;
 
 		int pacman = game.getPacmanCurrentNodeIndex();
-		int destino = Movimientos.proximoCrucePacman(game);
-		if (destino == pacman || destino == game.getGhostCurrentNodeIndex(ghost))
-			destino = pacman;
+		int yo = game.getGhostCurrentNodeIndex(ghost);
+		Movimientos.Intercepcion corte = Movimientos.intercepcion(game, ghost);
 
+		// Hay un punto de su camino al que llega antes que ella: ir por el camino más corto.
+		// Ese punto se calculó con la distancia más corta; flanqueando (camino más largo)
+		// podría llegar tarde. Además, si llega antes, ya la está cortando de frente.
+		if (corte.margen >= GhostsConstants.MARGEN_INTERCEPCION && corte.objetivo != yo && corte.objetivo != pacman)
+			return Movimientos.irHacia(game, ghost, corte.objetivo);
+
+		// Si no puede adelantarse: hacia su siguiente cruce (o hacia ella), flanqueando al perseguidor
+		int destino = corte.objetivo;
+		if (destino == pacman || destino == yo)
+			destino = pacman;
 		return Movimientos.irHaciaFlanqueando(game, ghost, destino, nodosAEvitar(game, pacman));
 	}
 

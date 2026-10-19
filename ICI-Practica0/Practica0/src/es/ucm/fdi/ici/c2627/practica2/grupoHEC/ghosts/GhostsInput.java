@@ -39,7 +39,8 @@ public class GhostsInput extends Input {
 	private EnumMap<GHOST, Boolean> enCarcel;
 	private EnumMap<GHOST, Boolean> comestible;
 	private EnumMap<GHOST, Integer> tiempoComestible;
-	private EnumMap<GHOST, Integer> distAPacman;   // del fantasma a Ms. Pac-Man
+	private EnumMap<GHOST, Integer> distAPacman;   // del fantasma a Ms. Pac-Man (para cazarla)
+	private EnumMap<GHOST, Integer> distPeligro;   // lo cerca que está ella de comérselo (para huir)
 	private EnumMap<GHOST, Integer> distAPill;     // del fantasma a la pill
 
 	// ---- Reparto del equipo -----------------------------------------------------------
@@ -70,6 +71,7 @@ public class GhostsInput extends Input {
 		comestible = new EnumMap<>(GHOST.class);
 		tiempoComestible = new EnumMap<>(GHOST.class);
 		distAPacman = new EnumMap<>(GHOST.class);
+		distPeligro = new EnumMap<>(GHOST.class);
 		distAPill = new EnumMap<>(GHOST.class);
 
 		for (GHOST g : FANTASMAS) {
@@ -78,8 +80,22 @@ public class GhostsInput extends Input {
 			comestible.put(g, !carcel && game.isGhostEdible(g));
 			tiempoComestible.put(g, game.getGhostEdibleTime(g));
 			distAPacman.put(g, Movimientos.distanciaFantasma(game, g, nodoPacman));
+			distPeligro.put(g, distanciaPeligro(g, carcel));
 			distAPill.put(g, pill < 0 ? Movimientos.INALCANZABLE : Movimientos.distanciaFantasma(game, g, pill));
 		}
+	}
+
+	/**
+	 * Distancia que importa para huir: la menor entre la de Ms. Pac-Man al fantasma (sin darse
+	 * ella la vuelta) y la del fantasma a ella. Antes se usaba solo la del fantasma a ella, y si
+	 * el fantasma iba alejándose por un pasillo, esa distancia incluía dar toda la vuelta: salía
+	 * enorme, el fantasma se creía "fuera de peligro" o con ella "lejos" mientras ella lo
+	 * alcanzaba por detrás (va al doble de velocidad). Así se sacrificaba sin intentar huir.
+	 */
+	private int distanciaPeligro(GHOST g, boolean carcel) {
+		if (carcel) return Movimientos.INALCANZABLE;
+		int ellaAMi = game.getShortestPathDistance(nodoPacman, game.getGhostCurrentNodeIndex(g), ultimoPacman);
+		return Math.min(ellaAMi, distAPacman.get(g));
 	}
 
 	// ==================================================================================
@@ -99,7 +115,7 @@ public class GhostsInput extends Input {
 	 */
 	public boolean fueraDePeligro(GHOST g) {
 		if (!comestible.get(g)) return false;
-		return 3L * (tiempoComestible.get(g) + MARGEN_HUIR) < 2L * distAPacman.get(g);
+		return 3L * (tiempoComestible.get(g) + MARGEN_HUIR) < 2L * distPeligro.get(g);
 	}
 
 	/** "Ms. Pacman se come PP": comestible y todavía en peligro. Excluyente con fueraDePeligro. */
@@ -165,12 +181,12 @@ public class GhostsInput extends Input {
 
 	/** "Ms. Pacman está cerca": vuelta a HUIDA EFICIENTE. */
 	public boolean pacmanCerca(GHOST g) {
-		return distAPacman.get(g) <= DISTANCIA_CERCA_PACMAN;
+		return distPeligro.get(g) <= DISTANCIA_CERCA_PACMAN;
 	}
 
 	/** "Ms. Pacman está lejos" (con histéresis respecto a pacmanCerca). */
 	public boolean pacmanLejos(GHOST g) {
-		return (long) distAPacman.get(g) > DISTANCIA_CERCA_PACMAN + HISTERESIS_CERCA;
+		return (long) distPeligro.get(g) > DISTANCIA_CERCA_PACMAN + HISTERESIS_CERCA;
 	}
 
 	/** (*IV) "Puede refugiarse": hay compañero al que llega antes que Ms. Pac-Man a él. */
@@ -203,23 +219,143 @@ public class GhostsInput extends Input {
 
 	/**
 	 * Nota *V: entre los fantasmas en NORMAL, por prioridad:
-	 *  1. PERSEGUIR: el más cercano a Ms. Pac-Man.
-	 *  2. INTERCEPTAR: el siguiente más cercano a Ms. Pac-Man.
-	 *  3. VIGILAR: de los que quedan, el más cercano a la power pill (si queda alguna).
-	 *  4. PATRULLAR: el resto.
+	 *  0. CERRAR: si alguno puede atrapar a Ms. Pac-Man en su pasillo, lo hace (elegirCerrador),
+	 *     tenga el papel que tenga.
+	 *  1. Pareja de caza (PERSEGUIR + INTERCEPTAR): los dos más cercanos a Ms. Pac-Man, con
+	 *     histéresis para entrar y salir de la pareja (formarParejaDeCaza).
+	 *     Dentro de la pareja, intercepta el que más se adelanta a ella (repartirPareja).
+	 *  2. VIGILAR: de los que quedan, el más cercano a la power pill (si queda alguna).
+	 *  3. CAZAR: el resto (van a por ella por otro camino).
 	 * Si el que tenía un papel deja de estar en NORMAL, el papel queda libre y lo ocupa el
-	 * mejor candidato en este mismo turno. Si sigue en NORMAL, solo lo pierde frente a otro
-	 * que esté HISTERESIS_PAPELES nodos más cerca.
+	 * mejor candidato en este mismo turno.
 	 */
 	private void repartirPapeles(Reparto r, Reparto anterior) {
 		List<GHOST> libres = new ArrayList<>();
 		for (GHOST g : FANTASMAS)
 			if (enNormal(g, r)) libres.add(g);
 
-		ocupar(r, anterior, libres, Papel.PERSEGUIR, distAPacman);
-		ocupar(r, anterior, libres, Papel.INTERCEPTAR, distAPacman);
+		GHOST cerrador = elegirCerrador(libres);         // la oportunidad de matarla va primero
+		if (cerrador != null) {
+			r.asignarPapel(cerrador, Papel.CERRAR);
+			libres.remove(cerrador);
+		}
+
+		List<GHOST> pareja = formarParejaDeCaza(anterior, libres);
+		repartirPareja(r, anterior, pareja);
+		libres.removeAll(pareja);
+
 		if (quedanPowerPills()) ocupar(r, anterior, libres, Papel.VIGILAR, distAPill);
-		for (GHOST g : libres) r.asignarPapel(g, Papel.PATRULLAR);
+		for (GHOST g : libres) r.asignarPapel(g, Papel.CAZAR);
+	}
+
+	/**
+	 * CERRAR PASO. Ms. Pac-Man no puede darse la vuelta: si está en un pasillo, tiene que salir
+	 * por el cruce del final. Un fantasma que llegue a ese cruce cuando ella o antes
+	 * (MARGEN_CIERRE) entra en el pasillo de frente y la atrapa, haga lo que haga ella.
+	 *  - No hay oportunidad si ella está en un cruce (puede elegir) o si hay una power pill en
+	 *    el pasillo (se la comería antes del encuentro).
+	 *  - De los fantasmas de 'libres' que pueden, el de más margen. Como mucho uno: con uno basta.
+	 */
+	private GHOST elegirCerrador(List<GHOST> libres) {
+		Movimientos.Tramo t = Movimientos.tramoPacman(game);
+		if (t == null) return null;
+		for (int pp : game.getActivePowerPillsIndices())
+			if (t.nodos.contains(pp)) return null;
+
+		GHOST mejor = null;
+		long mejorMargen = Long.MIN_VALUE;
+		for (GHOST g : libres) {
+			if (comestible.get(g)) continue;     // entraría de frente siendo comestible: se sacrificaría
+			int yo = Movimientos.distanciaFantasma(game, g, t.cruce);
+			if (yo == Movimientos.INALCANZABLE) continue;
+			long margen = (long) t.pasos - yo;
+			if (margen >= MARGEN_CIERRE && margen > mejorMargen) {
+				mejor = g;
+				mejorMargen = margen;
+			}
+		}
+		return mejor;
+	}
+
+	/**
+	 * Los dos fantasmas de 'libres' que forman la pareja de caza.
+	 *  1. Los que ya estaban en ella (perseguidor e interceptor del turno anterior) siguen,
+	 *     si siguen en NORMAL.
+	 *  2. Los huecos se llenan con los más cercanos a Ms. Pac-Man.
+	 *  3. Uno de fuera solo entra si está HISTERESIS_PAPELES nodos más cerca que el miembro
+	 *     más lejano, que sale.
+	 */
+	private List<GHOST> formarParejaDeCaza(Reparto anterior, List<GHOST> libres) {
+		List<GHOST> porCercania = new ArrayList<>(libres);
+		porCercania.sort((a, b) -> Integer.compare(distAPacman.get(a), distAPacman.get(b)));  // estable: empate -> orden del enum
+
+		List<GHOST> pareja = new ArrayList<>();
+		for (Papel p : new Papel[] { Papel.PERSEGUIR, Papel.INTERCEPTAR }) {
+			GHOST titular = anterior.quienTiene(p);
+			if (titular != null && libres.contains(titular) && !pareja.contains(titular)) pareja.add(titular);
+		}
+		for (GHOST g : porCercania)
+			if (pareja.size() < 2 && !pareja.contains(g)) pareja.add(g);
+
+		for (GHOST fuera : porCercania) {
+			if (pareja.contains(fuera)) continue;
+			GHOST masLejano = pareja.isEmpty() ? null : pareja.get(0);
+			for (GHOST m : pareja)
+				if (distAPacman.get(m) > distAPacman.get(masLejano)) masLejano = m;
+			if (masLejano != null && (long) distAPacman.get(fuera) + HISTERESIS_PAPELES < distAPacman.get(masLejano)) {
+				pareja.remove(masLejano);
+				pareja.add(fuera);
+			}
+		}
+		return pareja;
+	}
+
+	/**
+	 * Quién de la pareja persigue y quién intercepta. Margen de intercepción = cuántos turnos
+	 * se adelanta a Ms. Pac-Man en algún punto de su camino (Movimientos.intercepcion).
+	 *  - Pareja nueva (o con un miembro nuevo): intercepta el de más margen; persigue el otro.
+	 *    Ejemplo: dos fantasmas en fila delante de ella; el primero puede adelantarse y el
+	 *    segundo no, así que el primero intercepta y el segundo persigue y la encierran.
+	 *    Si ninguno puede adelantarse, persigue el más cercano a ella.
+	 *  - Misma pareja que el turno anterior: se mantienen los papeles, aunque el interceptor se
+	 *    acerque más a ella que el perseguidor. Solo se intercambian si el interceptor ya no
+	 *    puede adelantarse y el perseguidor sí.
+	 */
+	private void repartirPareja(Reparto r, Reparto anterior, List<GHOST> pareja) {
+		if (pareja.isEmpty()) return;
+		if (pareja.size() == 1) {
+			r.asignarPapel(pareja.get(0), Papel.PERSEGUIR);
+			return;
+		}
+		GHOST a = pareja.get(0), b = pareja.get(1);
+		int margenA = Movimientos.intercepcion(game, a).margen;
+		int margenB = Movimientos.intercepcion(game, b).margen;
+
+		GHOST perseguidor = anterior.quienTiene(Papel.PERSEGUIR);
+		GHOST interceptor = anterior.quienTiene(Papel.INTERCEPTAR);
+		boolean mismaPareja = pareja.contains(perseguidor) && pareja.contains(interceptor);
+
+		if (mismaPareja) {
+			int margenI = interceptor == a ? margenA : margenB;
+			int margenP = perseguidor == a ? margenA : margenB;
+			if (margenI < MARGEN_INTERCEPCION && margenP >= MARGEN_INTERCEPCION) {   // intercambio
+				GHOST t = perseguidor;
+				perseguidor = interceptor;
+				interceptor = t;
+			}
+		} else if (margenA < MARGEN_INTERCEPCION && margenB < MARGEN_INTERCEPCION) {
+			// Nadie puede adelantarse: persigue el más cercano a ella
+			boolean aMasCerca = distAPacman.get(a) <= distAPacman.get(b);
+			perseguidor = aMasCerca ? a : b;
+			interceptor = aMasCerca ? b : a;
+		} else {
+			boolean aIntercepta = margenA > margenB
+					|| (margenA == margenB && distAPacman.get(a) > distAPacman.get(b));
+			interceptor = aIntercepta ? a : b;
+			perseguidor = aIntercepta ? b : a;
+		}
+		r.asignarPapel(perseguidor, Papel.PERSEGUIR);
+		r.asignarPapel(interceptor, Papel.INTERCEPTAR);
 	}
 
 	/** Da 'papel' al mejor de 'libres' según 'distancia', respetando al titular si no hay mucha diferencia. */
@@ -273,9 +409,13 @@ public class GhostsInput extends Input {
 			int mejorDist = Integer.MAX_VALUE;
 			for (GHOST c : FANTASMAS) {
 				if (c == g || enCarcel.get(c) || comestible.get(c)) continue;
-				int dC = game.getShortestPathDistance(miNodo, game.getGhostCurrentNodeIndex(c), miUltimo);
+				int nodoC = game.getGhostCurrentNodeIndex(c);
+				int dC = game.getShortestPathDistance(miNodo, nodoC, miUltimo);
 				long tiempoYo = (long) FACTOR_LENTITUD_COMESTIBLE * Math.max(0, dC - RADIO_SEGURIDAD) + MARGEN_REFUGIO;
-				if (3L * tiempoYo < 2L * distAPacman.get(g) && dC < mejorDist) {
+				// Además, ella no puede estar más cerca del compañero que yo: estaría en medio
+				// del camino y el fantasma correría hacia ella
+				boolean ellaEnMedio = Movimientos.distanciaPacman(game, nodoC) <= dC;
+				if (!ellaEnMedio && 3L * tiempoYo < 2L * distPeligro.get(g) && dC < mejorDist) {
 					mejor = c;
 					mejorDist = dC;
 				}

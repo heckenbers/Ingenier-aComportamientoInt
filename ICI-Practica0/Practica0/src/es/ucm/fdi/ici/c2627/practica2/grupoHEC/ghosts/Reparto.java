@@ -15,7 +15,7 @@ import pacman.game.Constants.GHOST;
 public class Reparto {
 
 	/** Papeles de NORMAL, por orden de prioridad (nota *V del diagrama). */
-	public enum Papel { PERSEGUIR, INTERCEPTAR, VIGILAR, PATRULLAR, NINGUNO }
+	public enum Papel { PERSEGUIR, INTERCEPTAR, VIGILAR, CAZAR, CERRAR, NINGUNO }
 
 	private final EnumMap<GHOST, Papel> papeles = new EnumMap<>(GHOST.class);
 	private final EnumMap<GHOST, Integer> esquinas = new EnumMap<>(GHOST.class);
