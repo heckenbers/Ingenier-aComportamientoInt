@@ -1,4 +1,4 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanElkien.mspacman.actions;
 
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.MsPacManInput;
 import pacman.game.Constants.GHOST;

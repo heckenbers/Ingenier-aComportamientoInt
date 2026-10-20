@@ -1,4 +1,4 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman;
 
 import static pacman.game.Constants.EAT_DISTANCE;
 

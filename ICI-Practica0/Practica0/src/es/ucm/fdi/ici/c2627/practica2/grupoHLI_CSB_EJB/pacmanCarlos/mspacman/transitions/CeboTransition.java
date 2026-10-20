@@ -1,9 +1,9 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.transitions;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.transitions;
 
 import es.ucm.fdi.ici.Input;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MemoriaPacMan;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MsPacManInput;
 import es.ucm.fdi.ici.fsm.Transition;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MemoriaPacMan;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MsPacManInput;
 
 /**
  * IrAPíldoraRentable -> PrepararCebo.

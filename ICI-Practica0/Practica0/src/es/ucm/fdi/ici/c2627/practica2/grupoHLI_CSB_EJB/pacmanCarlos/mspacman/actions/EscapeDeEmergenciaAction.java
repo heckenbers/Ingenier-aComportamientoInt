@@ -1,12 +1,12 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.actions;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.actions;
 
-import static pacman.game.Constants.EAT_DISTANCE;
-
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MapaNivel;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MsPacManInput;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.Navegacion;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.Parametros;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MapaNivel;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MsPacManInput;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.Navegacion;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.PacManAction;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.Parametros;
 import pacman.game.Constants.MOVE;
+import static pacman.game.Constants.EAT_DISTANCE;
 
 /**
  * SUPERVIVENCIA / EscapeDeEmergencia. Pac-Man está acorralado o casi.

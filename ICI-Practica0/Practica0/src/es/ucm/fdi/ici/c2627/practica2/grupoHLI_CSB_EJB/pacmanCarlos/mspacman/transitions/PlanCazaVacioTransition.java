@@ -1,8 +1,8 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.transitions;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.transitions;
 
 import es.ucm.fdi.ici.Input;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MsPacManInput;
 import es.ucm.fdi.ici.fsm.Transition;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MsPacManInput;
 
 /** CazarFantasma -> RecolectarEnPoder: ningún fantasma comestible es alcanzable a tiempo. */
 public class PlanCazaVacioTransition implements Transition {

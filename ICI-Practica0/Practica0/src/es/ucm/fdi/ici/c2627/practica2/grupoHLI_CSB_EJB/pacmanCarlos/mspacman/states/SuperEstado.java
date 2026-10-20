@@ -1,13 +1,13 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.states;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.states;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import es.ucm.fdi.ici.Input;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MemoriaPacMan;
 import es.ucm.fdi.ici.fsm.FSM;
 import es.ucm.fdi.ici.fsm.State;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MemoriaPacMan;
 import pacman.game.Constants.MOVE;
 
 /**

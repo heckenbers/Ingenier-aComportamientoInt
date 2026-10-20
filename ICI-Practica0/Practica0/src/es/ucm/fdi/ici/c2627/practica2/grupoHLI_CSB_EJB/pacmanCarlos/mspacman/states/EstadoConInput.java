@@ -1,9 +1,9 @@
-package es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.states;
+package es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.states;
 
 import es.ucm.fdi.ici.Input;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.MsPacManInput;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.pacmanCarlos.mspacman.PacManAction;
 import es.ucm.fdi.ici.fsm.State;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.MsPacManInput;
-import es.ucm.fdi.ici.c2627.practica2.grupoYY.mspacman.actions.PacManAction;
 import pacman.game.Constants.MOVE;
 
 /**
