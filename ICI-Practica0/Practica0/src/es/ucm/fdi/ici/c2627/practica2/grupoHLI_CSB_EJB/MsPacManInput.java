@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import es.ucm.fdi.ici.Input;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.Constantes;
 import pacman.game.Constants.DM;
 import pacman.game.Constants.GHOST;
 import pacman.game.Constants.MOVE;
@@ -15,11 +16,13 @@ import pacman.game.Game;
  * Las distancias son siempre por los pasillos (DM.PATH) y respetan que nadie puede darse la vuelta:
  * la de Ms. Pac-Man usa su último movimiento y la de un fantasma usa el suyo. Un valor -1 significa
  * que no hay camino (por ejemplo, hacia la cárcel).
+ * <p>
+ * Ojo: el constructor de Input llama a parseInput() antes de que se inicialicen los atributos de esta
+ * clase, así que ningún atributo tiene valor inicial en su declaración (se perdería): todo se inicia
+ * dentro de parseInput().
  */
 public class MsPacManInput extends Input {
 
-    // OJO: ningún campo lleva valor inicial. El constructor de Input llama a parseInput() antes de
-    // que Java ejecute los inicializadores de esta subclase, y los pisarían. Todo se inicia en parseInput().
     private int pacman;
     private MOVE lastMove;
     private MOVE[] possibleMoves;
@@ -30,7 +33,6 @@ public class MsPacManInput extends Input {
     private int distNearestDangerous;
     private GHOST nearestEdible;
     private int distNearestEdible;
-    private int activeGhosts;
 
     // Píldoras que siguen sin comer
     private int[] pills;
@@ -43,7 +45,6 @@ public class MsPacManInput extends Input {
     private int nearestPill;
     private int distNearestPill;
 
-    /** Crea el Input; la clase base llama sola a parseInput(). */
     public MsPacManInput(Game game) {
         super(game);
     }
@@ -55,7 +56,6 @@ public class MsPacManInput extends Input {
         distNearestDangerous = Constantes.SIN_DISTANCIA;
         nearestEdible = null;
         distNearestEdible = Constantes.SIN_DISTANCIA;
-        activeGhosts = 0;
         nearestPowerPill = -1;
         distNearestPowerPill = Constantes.SIN_DISTANCIA;
         nearestPillReady = false;
@@ -84,17 +84,13 @@ public class MsPacManInput extends Input {
             Boolean comestible = game.isGhostEdible(g);
             if (comestible != null && comestible) {
                 int d = distanciaPacman(nodo);
-                if (d >= 0) {
-                    activeGhosts++;
-                    if (d < distNearestEdible) {
-                        distNearestEdible = d;
-                        nearestEdible = g;
-                    }
+                if (d >= 0 && d < distNearestEdible) {
+                    distNearestEdible = d;
+                    nearestEdible = g;
                 }
             } else {
                 int d = distanciaDeFantasma(g, pacman);
                 if (d >= 0) {
-                    activeGhosts++;
                     dangerous.add(g);
                     if (d < distNearestDangerous) {
                         distNearestDangerous = d;
@@ -154,11 +150,6 @@ public class MsPacManInput extends Input {
         return distNearestEdible;
     }
 
-    /** @return true si hay algún fantasma fuera de la cárcel (comestible o no) */
-    public boolean hasActiveGhost() {
-        return activeGhosts > 0;
-    }
-
     /** @return el nodo de ese fantasma, o -1 si no se puede saber */
     public int getGhostNode(GHOST g) {
         return game.getGhostCurrentNodeIndex(g);
@@ -202,6 +193,26 @@ public class MsPacManInput extends Input {
             nearestPill = cercana[0];
             distNearestPill = distanciaPacman(cercana[0]);
         }
+    }
+
+    /** @return true si en ese nodo hay una píldora de poder sin comer */
+    public boolean esPildoraPoder(int nodo) {
+        for (int p : powerPills) {
+            if (p == nodo) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return true si algún nodo del camino tiene una píldora de poder sin comer */
+    public boolean contienePildoraPoder(int[] camino) {
+        for (int nodo : camino) {
+            if (esPildoraPoder(nodo)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ Distancias
@@ -252,6 +263,50 @@ public class MsPacManInput extends Input {
         return game.getShortestPathDistance(a, b);
     }
 
+    /**
+     * Distancia por pasillos de 'desde' a 'hasta' para quien llega a 'desde' moviéndose en el sentido 'sentido':
+     * no puede darse la vuelta, así que seguir de frente puede alejarle mucho más de lo que dice la distancia
+     * simétrica. -1 si no hay camino.
+     */
+    public int distanciaConSentido(int desde, int hasta, MOVE sentido) {
+        if (desde < 0 || hasta < 0) {
+            return -1;
+        }
+        if (desde == hasta) {
+            return 0;
+        }
+        try {
+            return game.getShortestPathDistance(desde, hasta, sentido);
+        } catch (RuntimeException e) {
+            return game.getShortestPathDistance(desde, hasta);
+        }
+    }
+
+    /**
+     * Si Ms. Pac-Man entra en 'siguiente' (vecino suyo) con el movimiento 'mov' y sigue por el pasillo sin poder
+     * darse la vuelta: {primer cruce al que llega, pasos que da hasta él contando el paso a 'siguiente'}.
+     * Si 'siguiente' ya es un cruce, es él con 1 paso. Se corta a los PASILLO_MAX pasos o si el pasillo no sigue.
+     */
+    public int[] finDePasillo(int siguiente, MOVE mov) {
+        int nodo = siguiente;
+        MOVE sentido = mov;
+        int pasos = 1;
+        while (!game.isJunction(nodo) && pasos < Constantes.PASILLO_MAX) {
+            MOVE[] salidas = game.getPossibleMoves(nodo, sentido);
+            if (salidas.length == 0) {
+                break;
+            }
+            int vecino = game.getNeighbour(nodo, salidas[0]);
+            if (vecino < 0) {
+                break;
+            }
+            nodo = vecino;
+            sentido = salidas[0];
+            pasos++;
+        }
+        return new int[] {nodo, pasos};
+    }
+
     /** Menor distancia de un fantasma peligroso a 'nodo', o SIN_DISTANCIA si no hay ninguno. */
     public int distanciaMinimaFantasma(int nodo) {
         int minima = Constantes.SIN_DISTANCIA;
@@ -260,6 +315,34 @@ public class MsPacManInput extends Input {
             if (d >= 0 && d < minima) {
                 minima = d;
             }
+        }
+        return minima;
+    }
+
+    /** Cuántos fantasmas no comestibles están a 'distancia' nodos o menos de Ms. Pac-Man (cada uno con su último movimiento). */
+    public int numFantasmasPeligrososA(int distancia) {
+        int cuantos = 0;
+        for (GHOST g : dangerous) {
+            int d = distanciaDeFantasma(g, pacman);
+            if (d >= 0 && d <= distancia) {
+                cuantos++;
+            }
+        }
+        return cuantos;
+    }
+
+    /**
+     * Menor distancia de un fantasma peligroso a cualquier nodo de los primeros NODOS_REVISADOS_RUTA del camino,
+     * o SIN_DISTANCIA si no hay fantasmas. Mide lo cerca que pasa la ruta de ellos.
+     */
+    public int distanciaMinimaFantasmaEnRuta(int[] camino) {
+        int minima = Constantes.SIN_DISTANCIA;
+        int limite = Math.min(camino.length, Constantes.NODOS_REVISADOS_RUTA);
+        for (int i = 0; i < limite; i++) {
+            if (camino[i] == pacman) {
+                continue;
+            }
+            minima = Math.min(minima, distanciaMinimaFantasma(camino[i]));
         }
         return minima;
     }
@@ -372,77 +455,5 @@ public class MsPacManInput extends Input {
             }
         }
         return false;
-    }
-
-    // ------------------------------------------------------------------ Consultas para las acciones nuevas
-
-    /** @return cuántas píldoras comunes siguen sin comer */
-    public int getNumPills() {
-        return pills.length;
-    }
-
-    /** @return true si 'nodo' es el de una píldora de poder que sigue sin comer */
-    public boolean esPildoraPoder(int nodo) {
-        for (int p : powerPills) {
-            if (p == nodo) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** @return true si algún nodo del camino (salvo el de partida) tiene una píldora de poder */
-    public boolean contienePildoraPoder(int[] camino) {
-        for (int nodo : camino) {
-            if (nodo != pacman && esPildoraPoder(nodo)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Menor distancia de un fantasma peligroso a algún nodo del camino, o SIN_DISTANCIA si no hay fantasmas. */
-    public int distanciaMinimaFantasmaEnRuta(int[] camino) {
-        int minima = Constantes.SIN_DISTANCIA;
-        for (int nodo : camino) {
-            int d = distanciaMinimaFantasma(nodo);
-            if (d < minima) {
-                minima = d;
-            }
-        }
-        return minima;
-    }
-
-    /** @return cuántos fantasmas peligrosos están a menos de 'distancia' nodos de Ms. Pac-Man (cada uno con su último movimiento) */
-    public int contarFantasmasCerca(int distancia) {
-        int cuantos = 0;
-        for (GHOST g : dangerous) {
-            int d = distanciaDeFantasma(g, pacman);
-            if (d >= 0 && d < distancia) {
-                cuantos++;
-            }
-        }
-        return cuantos;
-    }
-
-    /**
-     * Ventaja (nodos) de Ms. Pac-Man sobre el fantasma peligroso más cercano a la píldora de poder más cercana:
-     * distancia del fantasma a la píldora menos la de Ms. Pac-Man. Devuelve Integer.MIN_VALUE si no hay píldora,
-     * no hay camino o la ruta pasa a menos de HUIR_PODER_DISTANCIA_RUTA nodos de un fantasma; SIN_DISTANCIA si
-     * no hay fantasmas peligrosos.
-     */
-    public int getVentajaPildoraPoder() {
-        if (nearestPowerPill < 0 || distNearestPowerPill < 0) {
-            return Integer.MIN_VALUE;
-        }
-        int[] camino = caminoHasta(nearestPowerPill);
-        if (camino.length == 0 || distanciaMinimaFantasmaEnRuta(camino) < Constantes.HUIR_PODER_DISTANCIA_RUTA) {
-            return Integer.MIN_VALUE;
-        }
-        int fantasma = distanciaMinimaFantasma(nearestPowerPill);
-        if (fantasma == Constantes.SIN_DISTANCIA) {
-            return Constantes.SIN_DISTANCIA;
-        }
-        return fantasma - distNearestPowerPill;
     }
 }

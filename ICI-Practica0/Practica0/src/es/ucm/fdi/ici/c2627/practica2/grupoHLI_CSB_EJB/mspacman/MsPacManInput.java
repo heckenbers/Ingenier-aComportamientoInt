@@ -282,6 +282,31 @@ public class MsPacManInput extends Input {
         }
     }
 
+    /**
+     * Si Ms. Pac-Man entra en 'siguiente' (vecino suyo) con el movimiento 'mov' y sigue por el pasillo sin poder
+     * darse la vuelta: {primer cruce al que llega, pasos que da hasta él contando el paso a 'siguiente'}.
+     * Si 'siguiente' ya es un cruce, es él con 1 paso. Se corta a los PASILLO_MAX pasos o si el pasillo no sigue.
+     */
+    public int[] finDePasillo(int siguiente, MOVE mov) {
+        int nodo = siguiente;
+        MOVE sentido = mov;
+        int pasos = 1;
+        while (!game.isJunction(nodo) && pasos < Constantes.PASILLO_MAX) {
+            MOVE[] salidas = game.getPossibleMoves(nodo, sentido);
+            if (salidas.length == 0) {
+                break;
+            }
+            int vecino = game.getNeighbour(nodo, salidas[0]);
+            if (vecino < 0) {
+                break;
+            }
+            nodo = vecino;
+            sentido = salidas[0];
+            pasos++;
+        }
+        return new int[] {nodo, pasos};
+    }
+
     /** Menor distancia de un fantasma peligroso a 'nodo', o SIN_DISTANCIA si no hay ninguno. */
     public int distanciaMinimaFantasma(int nodo) {
         int minima = Constantes.SIN_DISTANCIA;

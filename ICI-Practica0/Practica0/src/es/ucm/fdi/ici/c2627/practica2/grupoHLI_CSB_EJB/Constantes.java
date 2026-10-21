@@ -8,11 +8,9 @@ public final class Constantes {
 
     private Constantes() {
     }
-    
-    /** Depuración de las máquinas: true abre la ventana con los grafos y escribe en consola cada transición. Debe estar a false al entregar. */
-    public static final boolean DEBUG =true;
 
     /** Distancia que se usa cuando no hay ningún fantasma (o píldora) que medir. */
+    public static final boolean DEBUG = false;
     public static final int SIN_DISTANCIA = Integer.MAX_VALUE;
 
     /** Distancia que se le asigna a una píldora a la que no hay camino, para que nunca gane una comparación. */
@@ -109,6 +107,8 @@ public final class Constantes {
 
     /** Distancia a los fantasmas a partir de la cual dos movimientos se consideran igual de seguros. */
     public static final int DISTANCIA_SEGURA = HUIR_SALIDA;
+    /** V1: pasos máximos que se siguen por un pasillo buscando su cruce (corta un pasillo que diera vueltas sin cruces). */
+    public static final int PASILLO_MAX = 60;
     /** Peso de la seguridad (cada nodo de distancia a un fantasma) frente a acercarse a la píldora (cada nodo cuenta 1). */
     public static final long PESO_SEGURIDAD = 100000L;
 

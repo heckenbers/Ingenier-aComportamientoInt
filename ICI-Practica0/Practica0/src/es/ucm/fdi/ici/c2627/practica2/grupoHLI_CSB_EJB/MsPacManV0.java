@@ -4,7 +4,6 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
-import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.EtiquetadaTransition;
 
 import javax.swing.JFrame;
 
@@ -18,10 +17,12 @@ import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.HuirACru
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.HuirHaciaPildoraPoderAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.IrPildoraPoderAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.LimpiarUltimasAction;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.MsPacManAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.actions.PatrullarAction;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.AndTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.ComestibleCercaTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.EsperaAgotadaTransition;
+import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.EtiquetadaTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.FantasmaCercaDePildoraPoderTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.FantasmaPeligrosoCercaTransition;
 import es.ucm.fdi.ici.c2627.practica2.grupoHLI_CSB_EJB.mspacman.transitions.JuntoAPildoraPoderTransition;
@@ -65,24 +66,22 @@ public class MsPacManV0 extends PacmanController {
 
     /** Grafos de las máquinas, solo se rellena con DEBUG. Atributo de la instancia, no estático. */
     private final List<GraphFSMObserver> grafos = new ArrayList<>();
-    
-    /** Distingue por el estado de origen las flechas con la misma condición, para que el grafo no las confunda. */
-    private static Transition desde(String origen, Transition t) {
-        return new EtiquetadaTransition(t, origen);
-    }
+
+    /** Las acciones de los 10 estados simples, para que una versión posterior (V1) pueda configurarlas. */
+    private final List<MsPacManAction> acciones = new ArrayList<>();
 
     public MsPacManV0() {
         // ---- Estados simples (una acción cada uno)
-        SimpleState comerPildora = new SimpleState(new ComerPildoraAction());
-        SimpleState patrullar = new SimpleState(new PatrullarAction());
-        SimpleState esquivar = new SimpleState(new EsquivarPildoraPoderAction());
-        SimpleState limpiar = new SimpleState(new LimpiarUltimasAction());
-        SimpleState irPoder = new SimpleState(new IrPildoraPoderAction());
-        SimpleState evitar = new SimpleState(new EvitarCaminoAction());
-        SimpleState esperar = new SimpleState(new EsperarJuntoPildoraPoderAction());
-        SimpleState huirCruce = new SimpleState(new HuirACruceAction());
-        SimpleState huirPoder = new SimpleState(new HuirHaciaPildoraPoderAction());
-        SimpleState cazar = new SimpleState(new ComerFantasmaAction());
+        SimpleState comerPildora = estado(new ComerPildoraAction());
+        SimpleState patrullar = estado(new PatrullarAction());
+        SimpleState esquivar = estado(new EsquivarPildoraPoderAction());
+        SimpleState limpiar = estado(new LimpiarUltimasAction());
+        SimpleState irPoder = estado(new IrPildoraPoderAction());
+        SimpleState evitar = estado(new EvitarCaminoAction());
+        SimpleState esperar = estado(new EsperarJuntoPildoraPoderAction());
+        SimpleState huirCruce = estado(new HuirACruceAction());
+        SimpleState huirPoder = estado(new HuirHaciaPildoraPoderAction());
+        SimpleState cazar = estado(new ComerFantasmaAction());
 
         // ---- COMER: el estado inicial es ComerPildora (Ms. Pac-Man aparece en un nodo cualquiera)
         comerFsm = crearFsm("COMER");
@@ -124,8 +123,6 @@ public class MsPacManV0 extends PacmanController {
         Transition seguirHuyendo = new FantasmaPeligrosoCercaTransition(Constantes.HUIR_SALIDA);
         Transition seguirCazando = new ComestibleCercaTransition(Constantes.CAZAR_SALIDA, true);
         Transition seguirPoder = new PildoraPoderCercaTransition(Constantes.PODER_SALIDA, true);
-        
-        
 
         fsm = crearFsm("MsPacMan");
         // Desde COMER: se entra al estado cuya condición de entrada se cumpla, por prioridad
@@ -149,6 +146,22 @@ public class MsPacManV0 extends PacmanController {
         if (Constantes.DEBUG) {
             mostrarGrafos();
         }
+    }
+
+    /** Crea el estado simple de una acción y la guarda en la lista de acciones. */
+    private SimpleState estado(MsPacManAction accion) {
+        acciones.add(accion);
+        return new SimpleState(accion);
+    }
+
+    /** @return las acciones de los 10 estados simples (las mismas instancias que usa la máquina) */
+    protected List<MsPacManAction> getAcciones() {
+        return acciones;
+    }
+
+    /** Distingue por el estado de origen las flechas con la misma condición, para que el grafo no las confunda. */
+    private static Transition desde(String origen, Transition t) {
+        return new EtiquetadaTransition(t, origen);
     }
 
     /**
