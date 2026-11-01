@@ -1,0 +1,31 @@
+Practica3  ·  Ingeniería de Comportamientos Inteligentes
+
+El proyecto de partida de la práctica 3: el ejemplo guiado de la wiki
+(Ms. Pac-Man con siete reglas y el esqueleto de los fantasmas), las
+herramientas para depurar reglas y el banco para comparar versiones, ya
+configurado contra los rivales de referencia. El zip trae también el
+simulador, MsPacManEngine, al lado: se importan los dos a la vez.
+
+  1. Descomprime el zip en una carpeta estable, fuera del workspace.
+  2. Eclipse > File > Import > General > Existing Projects into Workspace.
+     Select root directory: la carpeta del zip. Marca MsPacManEngine y
+     Practica3, y "Copy projects into workspace". Finish.
+     (Si ya tenías MsPacManEngine de otra práctica, sale en gris: importa
+     sólo Practica3.)
+  3. Clic derecho en MsPacManEngine > Maven > Update Project (Alt+F5),
+     con "Force Update" marcado. Necesita Internet y la primera vez tarda.
+  4. Ejecuta, como Java Application:
+       VerPartida     una partida en pantalla, con la traza de las reglas
+       ProbarReglas   (en grupoYY/depurar) ocho casos, todos deben dar BIEN
+       Comparar       la v0 contra la v1, contra los cinco fantasmas
+                      de referencia
+
+Qué hay dentro:
+  src/es/ucm/fdi/ici/c2627/practica3/grupoYY/   el ejemplo: cambiad YY por
+                                                vuestra letra, y también en
+                                                RULES_PATH y en REGLAS
+  src/Comparar.java, Metrica.java               el banco de versiones
+  src/Rivales.java                              los rivales de referencia
+  lib/rival-basico/intermedio/avanzado.jar      los rivales de la práctica 1
+
+Todo está explicado en la wiki, Guías > Práctica 3.
