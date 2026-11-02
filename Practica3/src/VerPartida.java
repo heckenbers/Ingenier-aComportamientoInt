@@ -1,9 +1,9 @@
 import java.util.ArrayList;
 import java.util.List;
 
-import es.ucm.fdi.ici.c2627.practica3.grupoHEC.Ghosts;
-import es.ucm.fdi.ici.c2627.practica3.grupoHEC.MsPacMan;
-import es.ucm.fdi.ici.c2627.practica3.grupoHEC.depurar.TrazaReglas;
+import es.ucm.fdi.ici.c2627.practica3.grupoHLI_EJB_CSB.ghostsHLI_CSB_EJB.Ghosts;
+import es.ucm.fdi.ici.c2627.practica3.grupoHLI_EJB_CSB.pacmanHLI_CSB_EJB.MsPacMan;
+import es.ucm.fdi.ici.c2627.practica3.grupoHLI_EJB_CSB.pacmanHLI_CSB_EJB.depurar.TrazaReglas;
 import es.ucm.fdi.ici.rivales.MsPacManAvanzado;
 import pacman.Executor;
 import pacman.game.Constants.GHOST;

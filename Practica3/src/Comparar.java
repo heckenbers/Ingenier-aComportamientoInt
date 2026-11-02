@@ -11,8 +11,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import es.ucm.fdi.ici.c2627.practica3.grupoHEC.Ghosts;
-import es.ucm.fdi.ici.c2627.practica3.grupoHEC.MsPacMan;
+import es.ucm.fdi.ici.c2627.practica3.grupoHLI_EJB_CSB.ghostsHLI_CSB_EJB.Ghosts;
+import es.ucm.fdi.ici.c2627.practica3.grupoHLI_EJB_CSB.pacmanHLI_CSB_EJB.MsPacMan;
 import pacman.controllers.GhostController;
 import pacman.controllers.PacmanController;
 import pacman.game.Game;
@@ -39,8 +39,8 @@ public class Comparar {
     static final Map<String, Supplier<PacmanController>> RIVALES_PACMANS = Rivales.pacmans();
 
     static {
-        MIS_PACMANS.put("v0", () -> new MsPacMan("mspacman-v0.clp"));     // las seis primeras reglas
-        MIS_PACMANS.put("v1", () -> new MsPacMan("mspacman-v1.clp"));     // con rematar
+        MIS_PACMANS.put("v0", () -> new MsPacMan("mspacman-v0.clp"));     // supervivencia + poder + recolección
+        MIS_PACMANS.put("v1", () -> new MsPacMan("mspacman-v1.clp"));     // + el cebo (la del concurso)
 
         //MIS_FANTASMAS.put("v0", () -> new Ghosts("ghosts-v0.clp"));       // G1 y G2
         //MIS_FANTASMAS.put("v1", () -> new Ghosts("ghosts-v1.clp"));       // con G3    
