@@ -1,0 +1,8 @@
+Integrantes:
+Héctor López Ibáñez
+Elkien Joel Benítez Castillo
+Carlos Salvador Buhigas
+
+Controladores:
+MsPacManHLP_EJB_CSB.java
+GhostsHLP_EJB_CSB.java
