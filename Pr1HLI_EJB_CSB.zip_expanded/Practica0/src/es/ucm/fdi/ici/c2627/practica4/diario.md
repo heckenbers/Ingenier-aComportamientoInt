@@ -2,8 +2,11 @@
 
 **Integrantes:** Elkin Joel Benitez Castillo · Carlos Salvador Buhigas de las Heras · Héctor López Ibáñez
 
-**Concurso:** MsPacMan con `mspacman-v5.fcl` (16 reglas): es la que carga `MsPacMan()`. Ghosts: [PENDIENTE — los fantasmas los hace el grupo; ahora `Ghosts()` carga el esqueleto del ejemplo].
+**Concurso:** 
+ - **MsPacMan:** con `mspacman-v5.fcl` (16 reglas): es la que carga `MsPacMan()`.
+ - **Ghosts:** en desarrollo; provisionalmente `ghosts-v0.fcl` (2 reglas) por tener menor media de puntos concedidos que `v1` mientras iteramos.
 
+# Parte 1 · Implementación de Ms. Pac-Man
 **Rivales:** los cinco fantasmas de referencia (Random, Aggressive, Basico, Intermedio, Avanzado) más los fantasmas de Héctor de la Práctica 2 (*P2 Hector*), fijados desde el principio. 300 partidas por rival, semillas 1–300, límite de 4000 turnos.
 **Métricas:** puntos, nivel alcanzado, turnos por vida, fantasmas comidos.
 **La vara:** la V3 de Carlos de la Práctica 2 (*P2 V3*, una HFSM), que era nuestra mejor Ms. Pac-Man: 5755 puntos de media contra estos seis rivales. El objetivo era una borrosa que la iguale y después la supere.
@@ -271,3 +274,51 @@ Qué hizo:
 - Redactó este diario a partir de los resultados.
 
 **Qué cambiamos o revisamos nosotros:** *[PENDIENTE — una línea del grupo.]*
+
+
+# Parte 2 · Implementación de los Fantasmas
+
+**Rivales:** las tres Ms. Pac-Man de referencia (`Basico`, `Intermedio`, `Avanzado`), fijadas desde el principio. 300 partidas por versión y rival, semillas 1–300, límite de 4000 turnos (`COMPARO_FANTASMAS = true` en `Comparar`).
+**Métricas:** puntos concedidos, turnos por vida, fantasmas comidos. **En las tres métricas, menos es mejor** para los fantasmas.
+
+**Cómo está hecho.** Cada fantasma tiene su propio `FuzzyEngine` (bloque `Ghost`) creado en el constructor de `Ghosts`, y todos cargan el mismo fichero `.fcl` evaluado desde el punto de vista de ese fantasma (`yo`).
+
+- **Percepción y utilidades (`GhostsInput`, `Movimientos`, `GhostsConstants`):** reutilizamos el cálculo de tramos/caminos sin vuelta atrás de nuestra Práctica 3, adaptando las distancias y márgenes a rangos numéricos acotados y traduciendo las comparaciones entre compañeros de Jess a variables numéricas relativas. Además, un observador guarda el identificador de la última acción elegida en el turno anterior para permitir histéresis (`estabaBloqueando`).
+
+| Entrada | Qué mide | Rango |
+|---|---|---|
+| `pacman` | distancia de `yo` a Ms. Pac-Man (150 si está en la cárcel) | 0..150 |
+| `distPeligro` | menor distancia entre Ms. Pac-Man $\rightarrow$ `yo` y `yo` $\rightarrow$ Ms. Pac-Man | 0..150 |
+| `ppill` | distancia de Ms. Pac-Man a su power pill activa más cercana | 0..150 |
+| `distPP` | distancia de `yo` a esa misma power pill | 0..150 |
+| `comestible` | turnos restantes de comestible (0 si no lo es) | 0..200 |
+| `margenBloqueo` | ventaja en turnos para llegar antes que ella a la PP amenazada | −50..50 |
+| `soyMejorBloqueo` | 1 si ningún otro fantasma activo tiene mayor `margenBloqueo`, 0 si no | 0..1 |
+| `margenCorte` | ventaja en turnos para interceptar el camino previsto de Ms. Pac-Man | −50..50 |
+| `soyMejorCorte` | 1 si es el mejor interceptor (descartando al perseguidor más cercano), 0 si no | 0..1 |
+| `margenCierre` | ventaja para cerrar la salida del pasillo si ella está atrapada sin PP | −50..50 |
+| `soyMejorCierre` | 1 si tiene la mejor ventaja para cerrar el pasillo, 0 si no | 0..1 |
+| `puestoCercania` | ranking de cercanía a Ms. Pac-Man entre activos no comestibles | 1..4 |
+| `tieneRefugio` | 1 si existe un compañero no comestible al que llega antes que ella, 0 si no | 0..1 |
+| `estabaBloqueando` | 1 si en el turno anterior ganó `bloquearPP`, 0 si no | 0..1 |
+
+- **Acciones (`ghosts/actions/`):** portadas de la Práctica 3 implementando `Action` (sin `parseFact` y con `toString()` devolviendo `getActionId()`). `RefugiarseAction` calcula internamente el compañero más seguro en `execute(Game)` en lugar de recibirlo por parámetro.
+  - *Supervivencia (comestible):* `huidaEficiente` (mira dos cruces por delante), `refugiarse` (hacia compañero activo), `dispersarse` (reparto voraz de esquinas), `huir` (básica del ejemplo).
+  - *Peligro por píldora de poder:* `bloquearPP` (adelantarse a la PP amenazada y salir al encuentro), `huirDePP` (apartarse anticipando la inversión de sentido del motor al comerse la PP).
+  - *Caza coordinada:* `cerrarPaso` (cerrar cruce de salida de pasillo sin PP), `interceptar` (cortar camino por delante), `cazar` (flanquear evitando caminos de compañeros), `vigilarPP` (cubrir PP cercana a ella), `perseguir` (básica del ejemplo).
+
+Todas las salidas se evalúan en la escala `0..10` (`poco`, `algo`, `mucho`, `METHOD : COG`, `DEFAULT := 0`) y `MaxActionSelector` desempata siguiendo el orden del array (supervivencia $\rightarrow$ peligro PP $\rightarrow$ caza).
+
+---
+
+## sab 14 nov · v0 y v1: línea base del ejemplo (2 y 3 reglas)
+
+**Qué hacen.**
+- `ghosts-v0.fcl` (2 reglas): si `comestible IS si` $\rightarrow$ `huir IS mucho`; si `comestible IS no` $\rightarrow$ `perseguir IS mucho`.
+- `ghosts-v1.fcl` (3 reglas): añade `R3` (`IF comestible IS no AND pacman IS cerca AND ppill IS cerca THEN huir IS mucho, perseguir IS poco`) para que los fantasmas cercanos se aparten cuando Ms. Pac-Man amenaza una power pill. Se declaran las 14 entradas en ambos `.fcl` para evitar *No such variable* con el nuevo `GhostsInput` (portado y modificado desde la practica 3).
+
+**ProbarBorrosoGhosts (sobre `v1`).**
+- 4/4 casos base en `BIEN`, sin empates: comestible $\rightarrow$ `huir` (8,66 vs 0,00); no comestible con PP lejos $\rightarrow$ `perseguir` (8,66 vs 0,00); cerca de ella y PP amenazada $\rightarrow$ `huir` (8,66 vs 4,99, activando `R2` y `R3` a 1,00); lejos de ella con PP amenazada $\rightarrow$ `perseguir` (8,66 vs 0,00).
+- Curva de control de `ppill` (0 a 70 con `pacman = 15`, `comestible = 0`): `huir` gana hasta `ppill = 30` (bajando de 8,66 a 8,24 mientras `perseguir` sube de 4,99 a 6,56), y en `ppill = 35` (fin de `cerca`) cambia limpiamente a `perseguir` (8,66).
+
+**Comparar (`v1` frente a `v0`, menos es mejor).**
