@@ -322,3 +322,7 @@ Todas las salidas se evalúan en la escala `0..10` (`poco`, `algo`, `mucho`, `ME
 - Curva de control de `ppill` (0 a 70 con `pacman = 15`, `comestible = 0`): `huir` gana hasta `ppill = 30` (bajando de 8,66 a 8,24 mientras `perseguir` sube de 4,99 a 6,56), y en `ppill = 35` (fin de `cerca`) cambia limpiamente a `perseguir` (8,66).
 
 **Comparar (`v1` frente a `v0`, menos es mejor).**
+```
+MEDIA (3)             5919 ± 94       6114 ± 106      +195      284  ruido
+v1 es mejor contra 2 rivales, peor contra 1 y no se distingue contra 0.
+```
