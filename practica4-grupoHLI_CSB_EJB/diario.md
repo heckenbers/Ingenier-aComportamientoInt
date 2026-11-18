@@ -813,3 +813,43 @@ Qué hizo Claude:
 - Observación visual de las partidas y toma de decisiones: Ejecutamos `VerPartida` para buscar fallos tácticos.
 - Ejecución y revisión de las pruebas, trazas y comparaciones: Con cada versión nueva revisamos la activación de reglas y los resultados, tomando nota de los cambios a hacer.
 - Verificación final de la entrega de cada parte.
+
+Los prompts de los fantasmas, tal cual:
+
+**Versiones v0–v1:**
+
+«Partiendo del esqueleto base de `ghosts-v0` y `ghosts-v1`, vamos a portar la percepción (`GhostsInput`) y las acciones de nuestros fantasmas de la Práctica 3 quitando las dependencias de `parseFact`. Necesito incorporar `huidaEficiente` cuando `comestible > 0` y añadir una entrada `distPP` que mida la distancia real desde cada fantasma hasta la *power pill* amenazada (no solo la distancia de Ms. Pac-Man `ppill`), para que los fantasmas que estén lejos sigan persiguiendo.
+
+**Versión v2:**
+
+«Ahora que ya funciona la base sin empates, vamos a meter las tácticas defensivas que teníamos en la P3: `refugiarse` junto a un compañero sano cuando somos comestibles y el peligro está cerca (`tieneRefugio = 1`), `dispersarse` cuando queda mucho tiempo de vulnerabilidad y estamos lejos, y `bloquearPP` usando `margenBloqueo`, `soyMejorBloqueo` e histéresis (`estabaBloqueando`) para que solo el fantasma mejor situado tapone la píldora si llega antes que Ms. Pac-Man, bajando `perseguir` y `huirDePP` para que no compitan. Actualiza `ProbarBorroso` con los nuevos casos unitarios para validar que sigue sin haber empates.»
+
+**Versión v3:**
+
+«Listo, ya tenemos la parte defensiva. Ahora vamos a completar el traslado de la P3 metiendo las cuatro acciones ofensivas que faltan mediante seis reglas nuevas (`R10`–`R15`): `cerrarPaso` cuando Ms. Pac-Man entra en un pasillo sin salida (`margenCierre`, `soyMejorCierre`), `interceptar` para cortarle el camino por delante cuando somos perseguidor secundario (`puestoCercania > 1`, `margenCorte`, `soyMejorCorte`), `vigilarPP` cuando ronda una pildora a media distancia (`ppill` en `media` y `distPP` en `cerca`) y `cazar` para flanquear por caminos alternativos en lugar de ir en fila india. Asegúrate de bajar `cazar IS poco` dentro de las reglas de `interceptar` y `cerrarPaso`, añade la columna `vigilarPP` a la curva de control de `ProbarBorroso`»
+
+**Versión v4:**
+
+«He lanzado `VerPartida` con `TrazaBorrosa` contra `MsPacManIntermedio` y te paso la salida completa. Tenemos 5 reglas muertas con 0 victorias (`refugiarse` y `bloquearPP`), además de dos fallos tácticos claros: en `t=9` (`ppill = 25`) los secundarios disparan `cazar` por encima de `huirDePP` y se meten en su rango justo antes de que coja la píldora, y en `t=24` el fantasma líder (`puestoCercania = 1`) suelta una persecución a bocajarro (`pacman = 15`) para irse a vigilar una píldora (`vigilarPP`). Vamos a probar `ghosts-v4.fcl` reduciendo el sistema a 10 reglas: quitamos los bloques muertos, limitamos `vigilarPP` a secundarios (`puestoCercania IS otro`), desplazamos `ppill IS media` a `trian 30 50 70` y exigimos `ppill IS lejos` para flanquear con `cazar`.»
+
+**Versión v5:**
+
+«La `v4` ha salido peor en `Comparar` (regala `+229` puntos contra `Basico` y sube los fantasmas comidos a `4,04`), así que la descartamos porque exigir `ppill IS lejos` frena demasiado el flanqueo. Volvemos a la `v3` como base y miramos otra traza contra `MsPacManAvanzado`: nunca taponan bien una *power pill* porque `bloquearPP` espera a `ppill IS cerca` y para entonces ya llegan tarde (`t=39`), van todos juntos en fila india cuando vienen desde lejos (`t=67`) y pierden encerronas por exigir margen positivo estricto en `cerrarPaso` e `interceptar` (`t=16`). Vamos a hacer `ghosts-v5.fcl` quitando solo `refugiarse` (`tieneRefugio` siempre vale `0`), activando `bloquearPP` desde `ppill IS NOT lejos` con histéresis, ampliando `cazar` a `pacman IS NOT cerca` para flanquear desde lejos y converger solo a bocajarro, y adelantando `margenCierre` (`-5..0`) y `margenCorte` (`-4..0`) para acorralar antes.»
+
+**Versión v6:**
+
+«En la `v5` mejoramos mucho contra `Avanzado` (`5247` puntos), pero en la traza nos sigue quedando una regla muerta (`R6` de histéresis `estabaBloqueando`, que pierde el margen al turno siguiente y marca `0`), en `ProbarBorrosoGhosts` `vigilarPP` se queda enganchado hasta `ppill = 70` (`8,19` frente a `6,84` de `perseguir`) y contra `MsPacManIntermedio` aún dejamos algo de hueco en el remate final. Vamos a refinar `ghosts-v6.fcl` a 12 reglas limpias: eliminamos la histéresis muerta del bloqueo, recortamos `ppill IS media` a `trian 25 45 65` (con `lejos` desde `55`) para devolver el mando a `perseguir` a partir de `65` pasos, y ampliamos `pacman IS cerca` a `(0, 1) (20, 1) (35, 0)` para que los secundarios cierren juntos por debajo de 20 pasos. Genera el `.fcl`, el `ProbarBorrosoGhosts` actualizado y la entrada lista para rellenar en el diario.»
+
+
+**Qué hizo Gemini:**
+
+- Portó la percepción calculada en `GhostsInput` y las acciones tácticas de la Práctica 3 a reglas borrosas iterativas (`ghosts-v0.fcl` a `ghosts-v6.fcl`).
+- Ayudó a generar los distintos archivos `.fcl`, partiendo de versiones anteriores.
+- Analizó las trazas de `VerPartida` y las tablas estadísticas de `Comparar` para detectar reglas muertas, calibrar solapamientos de términos (`cerca`, `media`, `lejos`) y resolver prioridades entre reglas simultáneas.
+- Redactó y formateo algunas secciones de `diario.md` junto con la verificación final de cierre.
+
+**Qué hicimos nosotros:**
+
+- **Observación visual de partidas y diagnóstico táctico:** Ejecutamos `VerPartida` frente a los distintos rivales para detectar fallos reales sobre el tablero (persecuciones en fila india, falta de bloqueo en *power pills* o salidas sin taponar), decidiendo qué ajuste abordar en cada versión.
+- **Ejecución de pruebas, trazas y banco de comparación:** Lanzamos `ProbarBorrosoGhosts`, revisamos los contadores de activación de reglas con `TrazaBorrosa` y ejecutamos todas las tandas de `Comparar` para decidir qué versiones conservar, descartar o refinar.
+- **Verificación final y empaquetado de la entrega:** Comprobamos toda la lista de cierre (constructor sin argumentos `Ghosts()` cargando `ghosts-v6.fcl`, sin `TrazaBorrosa` ni atributos `static`, y `.zip` limpio con `es/` y `diario.md` en la raíz).
