@@ -391,3 +391,34 @@ v4 es mejor contra 0 rivales, peor contra 1 y no se distingue contra 2.
 
 ---
 
+## lun 16 nov · v5: bloqueo temprano de PP, flanqueo continuo y cierre ajustado (13 reglas)
+
+**Problema.** Viendo partidas de la v3 contra `MsPacManAvanzado` detectamos cuatro fallos:
+1. `bloquearPP` nunca saltaba porque exigía `ppill IS cerca`; en turnos en los que el fantasma tenía ventaja para taponar la píldora, pero esperaba demasiado y llegaba tarde.
+2. Los fantasmas secundarios (`puestoCercania > 1`) solo flanqueaban con `cazar` a media distancia (`pacman IS media`), así que cuando venían desde lejos (`t=67`) iban todos juntos en fila india detrás del líder.
+3. `cerrarPaso` e `interceptar` exigían margen positivo estricto (`> 0`), desaprovechando encerronas donde llegaban solo 1 o 2 pasos justos (`t=16`).
+4. `refugiarse` estaba siempre a `0` (`tieneRefugio = 0` en toda la partida).
+
+**Qué cambia.** Partimos de `v3`, quitamos `refugiarse` (regla muerta) y ajustamos `ghosts-v5.fcl` a **13 reglas**:
+- Activamos `bloquearPP` (`R4`–`R6`, con histéresis) desde `ppill IS NOT lejos` para taponar y proteger las píldoras antes de que se acerque.
+- Ampliamos `cazar` (`R13`) a `pacman IS NOT cerca` para que los secundarios flanqueen siempre que vengan de media o larga distancia y solo converjan a bocajarro.
+- Adelantamos `margenCierre` (`-5..0`) y `margenCorte` (`-4..0`) para cerrar salidas y acorralar con más decisión.
+
+**ProbarBorrosoGhosts.**
+- Los 11 casos salen `BIEN` y sin empates (`8,66` frente a `4,99` o `0,00`, y `8,60` frente a `5,14` en los cierres y cortes con margen ajustado).
+- En la curva de `ppill` (de 0 a 70 con `distPP = 15` y sin ventaja de bloqueo), gana `huirDePP` hasta `25` (`8,66` a `8,31`) y pasa sin huecos a `vigilarPP` desde `30` hasta `70` (pico de `8,66` en `50` y `8,19` en `70`, donde aún queda un resto de `media`).
+
+**Traza** (`VerPartida` con `TrazaBorrosa` en `BLINKY` contra `MsPacManAvanzado`, 75 turnos, 4440 puntos):
+- Gana `cazar` en 32 turnos, `perseguir` en 29, `dispersarse` en 4, `huidaEficiente` en 4, `huirDePP` en 3, `cerrarPaso` en 2 y `bloquearPP` en 1 (`t=3`, cuando ve ventaja temprana con `ppill = 82`).
+- El flanqueo continuo funciona (los secundarios se abren desde lejos sin ir en fila india), pero siguen quedando reglas a `0` en la traza de `BLINKY`: la histéresis del bloqueo (`R6`, porque en `t=4` pierde el margen y suelta el bloqueo) y `interceptar` (`R10`–`R11`, al ir `BLINKY` casi siempre como líder `puestoCercania = 1`).
+
+**Comparar (`v5` frente a `v4`, 300 partidas por rival, semillas 1–300, menos es mejor).**
+```
+MEDIA (3)             3612 ± 61        3282 ± 58      -331      168  mejor
+v5 es mejor contra 2 rivales, peor contra 0 y no se distingue contra 1.
+```
+
+**Valoración.** Recuperamos todo lo perdido en la `v4` y conseguimos nuestros mejores números hasta ahora contra `Avanzado` (`5247` puntos y `7,01` fantasmas comidos), mejorando a la `v4` en las tres medias (`-331` puntos, `-89` turnos por vida y `-0,56` fantasmas comidos) sin empeorar contra ningún rival.
+
+---
+
