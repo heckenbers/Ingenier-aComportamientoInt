@@ -327,6 +327,8 @@ MEDIA (3)             5919 ± 94       6114 ± 106      +195      284  ruido
 v1 es mejor contra 2 rivales, peor contra 1 y no se distingue contra 0.
 ```
 
+---
+
 ## sab 14 nov · v2: v1 + reglas de tecnicas defensivas (9 reglas)
 **Qué cambia.** 
 Incorporamos todo el bloque de comportamientos defensivos: `huidaEficiente`, `refugiarse` y `dispersarse` para cuando el fantasma es comestible, y `bloquearPP` y `huirDePP` cuando Ms. Pac-Man amenaza una píldora de poder. 
@@ -340,3 +342,30 @@ MEDIA (3)            6049 ± 101        4812 ± 71     -1237      247  mejor
 v2 es mejor contra 3 rivales, peor contra 0 y no se distingue contra 0.
 ```  
 **Valoración.** El bloque defensivo supone una mejora sustancial tanto en puntos concedidos como en supervivencia frente a las versiones anteriores, reduciendo mucho los fantasmas comidos; se queda como nueva referencia, aunque todavía queda por portar el bloque de caza coordinada que implementamos en la P3 (`cerrarPaso`, `interceptar`, `cazar` y `vigilarPP`) para mejorar la fase ofensiva en la siguiente versión.
+
+---
+
+## sab 14 nov · v3: v2 + caza coordinada completa de la P3 (15 reglas)
+
+**Qué cambia.** Completamos el traslado de la lógica de la Práctica 3 añadiendo las 4 acciones ofensivas que faltaban mediante seis reglas nuevas (`R10`–`R15`) en `ghosts-v3.fcl`:
+- **R10–R11 (`cerrarPaso`):** si Ms. Pac-Man se mete en un pasillo sin salida segura (`margenCierre IS positivo`) y somos el fantasma mejor situado (`soyMejorCierre IS si`), tapamos el cruce de escape y bajamos `perseguir` y `cazar`.
+- **R12–R13 (`interceptar`):** si no somos el perseguidor más cercano (`puestoCercania IS otro`) y llegamos con ventaja a cortar su camino (`margenCorte IS positivo` y `soyMejorCorte IS si`), interceptamos por delante frenando `perseguir` y `cazar`.
+- **R14 (`vigilarPP`):** cuando Ms. Pac-Man ronda una *power pill* a media distancia (`ppill IS media`) y estamos cerca de ella (`distPP IS cerca`), la cubrimos antes de que se acerque del todo.
+- **R15 (`cazar`):** si somos perseguidor secundario (`puestoCercania IS otro`) a media distancia (`pacman IS media`), flanqueamos por caminos distintos en lugar de ir todos en fila india detrás del líder.
+
+**ProbarBorrosoGhosts.**
+- Añadimos cuatro casos nuevos para `cerrarPaso`, `interceptar`, `vigilarPP` y `cazar`. Los 11 casos salen `BIEN` y sin empates (`8,66` frente a `4,99` o `0,00`).
+- En el caso de intercepción (`puestoCercania = 2` y `pacman = 45`), saltan a la vez `R12`–`R13` y `R15` (flanqueo), pero como `R13` baja `cazar IS poco`, gana limpiamente `interceptar` (`8,66` frente a `4,99`).
+- La curva de `ppill` (de 0 a 70 con `distPP = 15`) encadena las tres acciones sin huecos: gana `huirDePP` hasta `ppill = 25` (`8,66` a `8,44`), pasa a `vigilarPP` entre `30` y `65` (con pico de `8,66` en `45`) y cambia a `perseguir` (`8,66`) a partir de `70`.
+
+**Traza** (`VerPartida` con `TrazaBorrosa` en `BLINKY` contra `MsPacManAvanzado`, 156 turnos, 6980 puntos):
+- Gana `perseguir` en 62 turnos, `cazar` en 49, `interceptar` en 16, `dispersarse` en 14, `huidaEficiente` en 7, `cerrarPaso` en 5 y `huirDePP` en 3.
+- Las reglas nuevas de ataque (`R10`–`R15`) entran todas en juego con normalidad. En cambio, detectamos **reglas muertas (`0` activaciones)** en el bloque defensivo heredado de la v2: **`R3` (`refugiarse`) y `R5`–`R8` (`bloquearPP`) no se activan ni una sola vez** en toda la partida (`tieneRefugio` estuvo siempre a `0` y, cuando Ms. Pac-Man fue a por una *power pill*, `BLINKY` llegaba tarde con `margenBloqueo < 0`, disparando `R9` para apartarse).
+
+**Comparar (`v3` frente a `v2`, 300 partidas por rival, semillas 1–300, menos es mejor).**
+```
+MEDIA (3)             4862 ± 75        3280 ± 52     -1582      182  mejor
+v3 es mejor contra 2 rivales, peor contra 1 y no se distingue contra 0.
+```
+**Valoración.** La caza coordinada supone un salto enorme y nos acerca mucho al nivel de la P3: recorta `1582` puntos en la media concedida (sobre todo frente a `MsPacManAvanzado`) y baja los fantasmas comidos a `3,58`. **Se queda** como versión de referencia, pero queda pendiente en las siguientes iteraciones revisar esas **reglas muertas** (`R3` y `R5`–`R8`) para ajustar sus condiciones.
+---
