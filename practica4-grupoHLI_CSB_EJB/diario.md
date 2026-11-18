@@ -755,14 +755,45 @@ Tiempo por turno: el primer turno tarda 255 ms (arranque); después, como mucho 
 
 Esta práctica se ha hecho con ayuda de Claude (Anthropic) y, en los fantasmas, también de Gemini. Los prompts de la Ms. Pac-Man, tal cual:
 
-> (16 nov) Con el statement de la práctica 4 y los temas de razonamiento borroso hay que hacer un controlador de MsPacman que supere a los demás controladores que hemos hecho con estas nuevas técnicas: [enlaces a la Práctica 4 y a los apuntes del tema 4]
->
-> (17 nov) ponte a hacer las mejoras de la P4 que no hicimos ayer y haz las comparaciones con la P3
->
-> (18 nov) ten en cuenta que la entrega es hoy a las 23:59 lo que nos da tiempo a hacer cosas
->
-> (18 nov) haz alguna otra version
+Versión v0:
 
+«Necesitamos migrar la estructura base de nuestra HFSM V3 de la Práctica 2 a un sistema de reglas borrosas en FCL. Implementa las cuatro acciones principales (escapar, evadir, recolectar y cazar) utilizando las mismas entradas analíticas pero sin la gestión de cebo por el momento. Es un requisito estricto que todas las reglas definidas tengan activación real en partida y que el script de verificación ProbarBorroso valide correctamente todos los casos sin excepciones ni ambigüedades.»
+
+Versión v1:
+
+«Incorpora la lógica de gestión del cebo de la V3 sobre la base de la v0, añadiendo reglas específicas para los estados de espera y de ingesta de la píldora de fuerza. Una vez implementado, ejecuta un banco de pruebas comparativo de 300 partidas por rival frente a la v0 para cuantificar el impacto exacto en puntos y en fantasmas comidos.»
+
+Versiones v2–v4:
+
+«Queremos refinar el comportamiento defensivo: evalúa mediante dos variantes independientes si, al disponer de un margen holgado de ruta, la presencia cercana de un fantasma no debería forzar una huida prematura, y por otro lado, si debemos forzar explícitamente la acción de comer el cebo cuando el fantasma ya se encuentra a corta distancia. Aísla cada hipótesis en una versión independiente (v2, v3 y v4) para trazar de forma unívoca qué aporta cada modificación al rendimiento global.»
+
+Versión v5:
+
+«Realiza una auditoría de la base de reglas actual y elimina aquellas que no registren activaciones en las trazas o cuyo comportamiento sea redundante. Verifica mediante la herramienta de resumen que la compactación no altera la efectividad del controlador y que se mantiene la robustez frente a todos los rivales de referencia.»
+
+Versiones v6, v9:
+
+«Tras analizar las trazas de ejecución, hemos detectado que Ms. Pac-Man entra en bucles de inactividad o da vueltas improductivas al final de los niveles cuando quedan pocas píldoras dispersas. Diseña e implementa una nueva acción de navegación directa hacia la píldora más cercana que evite las penalizaciones de los callejones y resuelva el estancamiento sin comprometer la seguridad frente a los fantasmas.»
+
+Versiones v7, v8:
+
+«Modifica la regla de recolección (R5) para que permanezca inactiva cuando la estrategia de cebo esté activa, y experimenta añadiendo una nueva entrada al sistema que compute el "hambre" en función de los turnos consecutivos transcurridos sin ingerir puntos, evaluando si esto mejora la agresividad general del agente.»
+
+Versiones v10–v13:
+
+«Realiza un barrido paramétrico exhaustivo sobre los umbrales de paciencia en la espera del cebo y los rangos de distancia de amenaza de los fantasmas. Ejecuta una criba preliminar de 40 partidas por rival para cada combinación antes de seleccionar los mejores parámetros y lanzarlos a la tanda definitiva de 300 partidas.»
+
+Versión v14:
+
+«Abordemos el cuello de botella estructural de las rutas: cuando el sistema determine que no existe una ruta de huida segura bajo el criterio clásico de mirar tres pasillos, implementa un algoritmo BFS global que calcule con precisión geométrica qué sector del laberinto pertenece a Ms. Pac-Man (es decir, a qué nodos llega antes que cualquier fantasma), obligándola a maniobrar hacia la zona libre más amplia disponible.»
+
+Versiones v15–v17:
+
+«Amplía el ámbito de aplicación de la acción de territorio para que actúe también en escenarios críticos donde el fantasma se encuentra a distancia de contacto o inmediatamente encima, o bien indexada mediante una variable cuantitativa del volumen de la zona libre. Despliega cada variante en un entregable versionado independiente para medir su estabilidad.»
+
+Versiones v18, v19:
+
+«Optimiza la función de evaluación de la acción de territorio incorporando como factores ponderables el recuento de píldoras normales y de power pills presentes en el área accesible, parametrizando los pesos de forma externa sin alterar la lógica de decisión probada en la v14. Valida el comportamiento mediante cribas cruzadas antes de decidir su integración definitiva.»
 Decisiones que tomamos nosotros durante el trabajo (Claude preguntaba y elegíamos):
 
 - **Paquete:** `grupoHLI_CSB_EJB`, el mismo nombre que en la Práctica 2.
