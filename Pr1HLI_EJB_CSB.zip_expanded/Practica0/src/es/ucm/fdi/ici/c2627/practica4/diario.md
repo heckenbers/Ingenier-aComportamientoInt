@@ -260,21 +260,6 @@ La Ms. Pac-Man de la Práctica 3 no está entre los rivales: no la teníamos al 
 
 ---
 
-## IA
-
-Esta práctica se ha hecho con ayuda de Claude (Anthropic). El prompt, tal cual:
-
-> Con el statement de la práctica 4 y los temas de razonamiento borroso hay que hacer un controlador de MsPacman que supere a los demás controladores que hemos hecho con estas nuevas técnicas: [enlaces a la Práctica 4 y a los apuntes del tema 4]
-
-Qué hizo:
-
-- Portó la percepción y las acciones de la V3 de la P2.
-- Escribió las versiones v0–v6, `ProbarBorroso` y las herramientas de medida.
-- Ejecutó todas las tandas de Comparar.
-- Redactó este diario a partir de los resultados.
-
-**Qué cambiamos o revisamos nosotros:** *[PENDIENTE — una línea del grupo.]*
-
 
 # Parte 2 · Implementación de los Fantasmas
 
@@ -422,3 +407,57 @@ v5 es mejor contra 2 rivales, peor contra 0 y no se distingue contra 1.
 
 ---
 
+## mier 18 nov · v6: limpieza de regla muerta, suelta de vigilancia y cierre a 20 pasos (12 reglas)
+
+**Problema.** En `v5` detectamos tres detalles de ajuste fino:
+1. La regla de histéresis del bloqueo (`R6` de `estabaBloqueando`) quedó a `0` activaciones en toda la traza porque al perder ventaja en el turno siguiente el margen pasaba a negativo.
+2. En la curva de `ppill`, `vigilarPP` seguía activo hasta `70` pasos por ser `media` demasiado ancho (`25..75`), reteniendo al fantasma vigilando píldoras ya lejanas.
+3. Contra `MsPacManIntermedio` (`3127` puntos, empate en ruido), los secundarios flanqueaban hasta los `15` pasos, dejando algo de hueco en el remate final.
+
+**Qué cambia.** Refinamos `ghosts-v6.fcl` dejando **12 reglas** limpias:
+- Eliminamos la regla muerta de histéresis de `estabaBloqueando`.
+- Recortamos `ppill IS media` a `trian 25 45 65` (y `lejos` desde `55`) para que `vigilarPP` suelte a partir de `65` pasos y vuelva a `perseguir`.
+- Ampliamos `pacman IS cerca` a `(0, 1) (20, 1) (35, 0)` (y `media` a `trian 25 45 70`) para cerrar antes el cerco final.
+
+**ProbarBorrosoGhosts.**
+- Los 11 casos salen `BIEN` y sin empates (`8,66` frente a `4,99` o `0,00`, y `8,60` frente a `5,14` en cierres y cortes ajustados).
+- En la curva de `ppill` (de 0 a 70 con `distPP = 15` y sin bloqueo), encadena las tres fases sin huecos: `huirDePP` hasta `25` (`8,66` a `8,31`), `vigilarPP` de `30` a `60` (pico de `8,66` en `45`) y vuelta limpia a `perseguir` (`8,66`) a partir de `65`.
+
+**Traza** (`VerPartida` con `TrazaBorrosa` en `BLINKY` contra `MsPacManAvanzado`, 61 turnos, 2970 puntos):
+- Gana `perseguir` en 31 turnos, `cazar` en 11, `huidaEficiente` en 7, `cerrarPaso` en 5, `bloquearPP` en 2 (`t=2`), `dispersarse` en 2, `vigilarPP` en 2 y `huirDePP` en 1.
+- **Todas las reglas (`RULE 1` a `RULE 12`) se activan al menos 2 veces** en una sola partida, dejando el sistema completamente libre de reglas muertas.
+
+**Comparar (`v6` frente a `v5`, 300 partidas por rival, semillas 1–300, menos es mejor).**
+```
+MEDIA (3)             3237 ± 53        3258 ± 59       +20      158  ruido
+v6 es mejor contra 0 rivales, peor contra 0 y no se distingue contra 3.
+```
+
+---
+
+**Valoración.** Empata estadísticamente con `v5` en todas las métricas (mejora ligeramente frente a `Intermedio` en `-139` puntos y baja la media de turnos por vida a `610`, todo dentro del ruido), pero corrige la curva de vigilancia y consigue que las 12 reglas se disparen en partida sin ninguna regla muerta. **Se queda** como versión definitiva.
+
+---
+
+## Elección para el concurso (Fantasmas)
+
+Nuestra elección es **`ghosts-v6.fcl`** (12 reglas). Es la versión con mejor equilibrio global frente a los tres rivales de referencia (`3258` puntos concedidos de media, `610` turnos por vida y `3,54` fantasmas comidos), combinando bloqueo y huida ante *power pills* con caza coordinada (`cerrarPaso`, `interceptar` y flanqueo) y con el 100 % de sus reglas activas en partida.
+
+
+
+## IA
+
+Esta práctica se ha hecho con ayuda de Claude y Gemini. El prompt, tal cual:
+
+> Con el statement de la práctica 4 y los temas de razonamiento borroso hay que hacer un controlador de MsPacman que supere a los demás controladores que hemos hecho con estas nuevas técnicas: [enlaces a la Práctica 4 y a los apuntes del tema 4]
+
+Qué hizo:
+- Portó la percepción y las acciones de la P3 a la P4
+- Escribió las versiones v0–v6, `ProbarBorroso` y las herramientas de medida.
+- Ejecutó todas las tandas de Comparar.
+- Redactó partes de este diario a partir de los resultados.
+
+Que hicimos nosotros:
+- Observación visual de las partidas y toma de decisiones: Ejecutamos `VerPartida`para buscar fallos tácticos.
+- Ejecución y revisión de las pruebas, trazas y comparaciones: Con cada versión nueva revisamos la activación de reglas y los resultados, tomando nota de los cambios a hacer.
+- Verificación final de la entrega de cada parte.
