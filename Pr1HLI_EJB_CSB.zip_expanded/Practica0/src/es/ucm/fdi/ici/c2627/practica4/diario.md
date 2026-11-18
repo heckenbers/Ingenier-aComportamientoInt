@@ -366,6 +366,28 @@ v2 es mejor contra 3 rivales, peor contra 0 y no se distingue contra 0.
 ```
 MEDIA (3)             4862 ± 75        3280 ± 52     -1582      182  mejor
 v3 es mejor contra 2 rivales, peor contra 1 y no se distingue contra 0.
-```
+``` 
 **Valoración.** La caza coordinada supone un salto enorme y nos acerca mucho al nivel de la P3: recorta `1582` puntos en la media concedida (sobre todo frente a `MsPacManAvanzado`) y baja los fantasmas comidos a `3,58`. **Se queda** como versión de referencia, pero queda pendiente en las siguientes iteraciones revisar esas **reglas muertas** (`R3` y `R5`–`R8`) para ajustar sus condiciones.
+
 ---
+
+## lun 16 nov · v4: limpieza de reglas muertas y freno al flanqueo (10 reglas) → descartada
+
+**Problema.** En la v3 teníamos 5 reglas muertas (`refugiarse` y `bloquearPP`) que no ganaban ni un turno. Además, contra `Intermedio` los secundarios se lanzaban a flanquear (`cazar`) cuando Ms. Pac-Man estaba a punto de coger una *power pill*, y el líder soltaba persecuciones encima de ella para vigilar píldoras (`t=24`).
+
+**Qué cambia.** Quitamos los bloques muertos dejando `ghosts-v4.fcl` en 10 reglas, limitamos `vigilarPP` (`R9`) a fantasmas secundarios y exigimos `ppill IS lejos` para flanquear con `cazar` (`R10`).
+
+**ProbarBorrosoGhosts.**
+- Los 11 casos salen `BIEN` y sin empates (`8,66` frente a `4,99` o `0,00`), resolviendo los fallos de las versiones anteriores
+- La curva de `ppill` (de 0 a 70 con `distPP = 15`) encadena bien las tres acciones: `huirDePP` hasta `30` (`8,66` a `8,24`), `vigilarPP` entre `35` y `65` (pico de `8,66` en `50`) y `perseguir` (`8,66`) en `70`, sin huecos.
+
+**Comparar (`v4` frente a `v3`, 300 partidas por rival, semillas 1–300, menos es mejor).**
+```
+MEDIA (3)             3412 ± 55        3526 ± 57      +114      159  ruido
+v4 es mejor contra 0 rivales, peor contra 1 y no se distingue contra 2.
+```
+
+**Valoración.** Aunque en las pruebas unitarias iba fina, en partida real empeora: la media de puntos se queda en ruido (`+114`), suben los fantasmas comidos (`+0,28`, peor) y contra `Basico` regala `+229` puntos. Al exigir `ppill IS lejos` para flanquear, los fantasmas tardan demasiado en rodear y dejan escapar a rivales sencillos. **Se descarta** (volvemos a la `v3` como base para la `v5`, donde limpiaremos solo las reglas muertas sin frenar tanto el ataque).
+
+---
+
