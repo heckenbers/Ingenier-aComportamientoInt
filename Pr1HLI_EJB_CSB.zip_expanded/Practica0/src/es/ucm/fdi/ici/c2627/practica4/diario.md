@@ -326,3 +326,17 @@ Todas las salidas se evalúan en la escala `0..10` (`poco`, `algo`, `mucho`, `ME
 MEDIA (3)             5919 ± 94       6114 ± 106      +195      284  ruido
 v1 es mejor contra 2 rivales, peor contra 1 y no se distingue contra 0.
 ```
+
+## sab 14 nov · v2: v1 + reglas de tecnicas defensivas (9 reglas)
+**Qué cambia.** 
+Incorporamos todo el bloque de comportamientos defensivos: `huidaEficiente`, `refugiarse` y `dispersarse` para cuando el fantasma es comestible, y `bloquearPP` y `huirDePP` cuando Ms. Pac-Man amenaza una píldora de poder. 
+Como tanto la percepción como las 11 acciones ya están portadas y registradas en Java, el cambio consiste únicamente en añadir el nuevo fichero `ghosts-v2.fcl`.
+
+**ProbarBorroso.** Dos casos nuevos: «fantasma a 10, margen 25 → recolecta» y «margen 10 → evade»; los 16 dan BIEN. La curva de `margen` con el fantasma a 10 ticks cruza suave: escapa hasta 5 de margen, evade de 5 a 14, y a partir de 17 recolecta (`evadir` baja de 8,6 a 5,0 y `recolectar` sube de 1,4 a 8,6). No hay huecos.
+**Comparar (v2 frente a v1).**
+
+```
+MEDIA (3)            6049 ± 101        4812 ± 71     -1237      247  mejor
+v2 es mejor contra 3 rivales, peor contra 0 y no se distingue contra 0.
+```  
+**Valoración.** El bloque defensivo supone una mejora sustancial tanto en puntos concedidos como en supervivencia frente a las versiones anteriores, reduciendo mucho los fantasmas comidos; se queda como nueva referencia, aunque todavía queda por portar el bloque de caza coordinada que implementamos en la P3 (`cerrarPaso`, `interceptar`, `cazar` y `vigilarPP`) para mejorar la fase ofensiva en la siguiente versión.
