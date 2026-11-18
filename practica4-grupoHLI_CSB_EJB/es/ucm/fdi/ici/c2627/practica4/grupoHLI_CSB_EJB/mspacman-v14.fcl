@@ -1,0 +1,184 @@
+// Ms. Pac-Man · v14 = v5 + territorio: sin ruta segura (margen nulo) y sin el fantasma encima,
+// salir hacia donde quede más laberinto "suyo" (llega antes que cualquier fantasma), mirando todo
+// el laberinto y no sólo tres pasillos como escapar.
+
+FUNCTION_BLOCK MsPacMan
+
+VAR_INPUT
+   amenaza : REAL;    // ticks hasta que el peligroso más rápido llega a ella, 0..60
+   margen : REAL;     // ventaja de la mejor ruta de huida, en ticks, -10..40
+   caza : REAL;       // fantasmas comestibles que le da tiempo a encadenar, 0..4
+   revertir : REAL;   // ticks hasta que un comestible vuelva a ser peligroso donde está, 0..60
+   cebo : REAL;       // fantasmas que encadenaría comiéndose ahora la píldora de cebo, 0..4
+   espera : REAL;     // ticks seguidos esperando junto al cebo, 0..120
+   quedan : REAL;     // píldoras que quedan, % del laberinto, 0..100
+   pildora : REAL;    // pasos hasta la píldora más cercana, 0..100 (la manda el Input desde la v6;
+                      // aquí sólo se declara, sin reglas, para que no falle con No such variable)
+   hambre : REAL;     // ticks sin comer ninguna píldora, 0..300 (la manda el Input desde la v8;
+                      // aquí sólo se declara, sin reglas, para que no falle con No such variable)
+   espacio : REAL;    // nodos "suyos" saliendo por el mejor movimiento, 0..400 (la manda el Input
+                      // desde la v17; aquí sólo se declara, sin reglas)
+END_VAR
+
+VAR_OUTPUT            // una por acción, con su getActionId(), de 0 a 10
+   escapar : REAL;
+   evadir : REAL;
+   cazar : REAL;
+   recolectar : REAL;
+   esperarCebo : REAL;
+   comerCebo : REAL;
+   territorio : REAL;
+END_VAR
+
+FUZZIFY amenaza
+   TERM inminente := (0, 1) (4, 1) (8, 0);
+   TERM cerca := trian 5 11 18;
+   TERM lejos := (13, 0) (22, 1) (60, 1);
+END_FUZZIFY
+
+FUZZIFY margen       // en la V3, una ruta es segura con más de 4 ticks de ventaja
+   TERM nulo := (-10, 1) (3, 1) (7, 0);
+   TERM justo := trian 4 10 18;
+   TERM holgado := (12, 0) (20, 1) (40, 1);
+END_FUZZIFY
+
+FUZZIFY caza
+   TERM ninguno := (0, 1) (0.6, 0);
+   TERM alguno := (0.4, 0) (1, 1) (4, 1);
+END_FUZZIFY
+
+FUZZIFY revertir
+   TERM pronto := (0, 1) (8, 1) (16, 0);
+   TERM tarde := (10, 0) (20, 1) (60, 1);
+END_FUZZIFY
+
+FUZZIFY cebo         // 1 fantasma = 200 puntos, 2 = 600, 3 = 1400, 4 = 3000
+   TERM nada := (0, 1) (1, 1) (1.6, 0);
+   TERM bueno := trian 1.2 2 3;
+   TERM excelente := (2.2, 0) (3, 1) (4, 1);
+END_FUZZIFY
+
+FUZZIFY espera       // en la V3, la paciencia era de 80 ticks
+   TERM poca := (0, 1) (60, 1) (95, 0);
+   TERM mucha := (65, 0) (100, 1) (120, 1);
+END_FUZZIFY
+
+FUZZIFY pildora
+   TERM cerca := (0, 1) (10, 1) (20, 0);
+   TERM lejos := (12, 0) (25, 1) (100, 1);
+END_FUZZIFY
+
+FUZZIFY hambre       // comiendo normal, entre píldora y píldora pasan pocos ticks
+   TERM poca := (0, 1) (60, 1) (100, 0);
+   TERM mucha := (80, 0) (150, 1) (300, 1);
+END_FUZZIFY
+
+FUZZIFY espacio      // un pasillo entre dos fantasmas son pocas decenas de nodos; medio laberinto, cientos
+   TERM pequeno := (0, 1) (40, 1) (90, 0);
+   TERM amplio := (60, 0) (150, 1) (400, 1);
+END_FUZZIFY
+
+FUZZIFY quedan
+   TERM pocas := (0, 1) (6, 1) (12, 0);
+   TERM muchas := (8, 0) (15, 1) (100, 1);
+END_FUZZIFY
+
+DEFUZZIFY escapar
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY evadir
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY cazar
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY esperarCebo
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY comerCebo
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY territorio
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY recolectar
+   TERM poco  := (0, 1) (4, 0);
+   TERM algo  := trian 2 5 8;
+   TERM mucho := (6, 0) (10, 1);
+   METHOD : COG;
+   DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK reglas
+   AND : MIN;
+   ACT : MIN;
+   ACCU : MAX;
+
+   // (jFuzzyLogic admite como mucho dos consecuencias por regla: si una situación sube una
+   //  salida y baja dos, son dos reglas con la misma condición)
+
+   // emergencia: el fantasma ya está encima o no queda ninguna ruta con ventaja
+   RULE 1 : IF amenaza IS inminente OR margen IS nulo THEN escapar IS mucho, recolectar IS poco;
+   RULE 2 : IF amenaza IS inminente OR margen IS nulo THEN evadir IS algo;
+   // un fantasma se acerca pero hay por dónde huir: evadir (sin dejar de comer)
+   RULE 3 : IF amenaza IS cerca AND margen IS NOT nulo THEN evadir IS mucho, recolectar IS poco;
+   RULE 4 : IF amenaza IS cerca AND margen IS NOT nulo THEN escapar IS poco;
+   // nadie cerca: a comer, y cuanto más margen, más
+   RULE 5 : IF amenaza IS lejos AND margen IS holgado AND revertir IS tarde THEN recolectar IS mucho, evadir IS poco;
+   RULE 6 : IF amenaza IS lejos AND margen IS NOT nulo THEN escapar IS poco;
+   RULE 7 : IF amenaza IS lejos AND margen IS justo AND revertir IS tarde THEN recolectar IS algo, evadir IS poco;
+   // poder: si hay fantasmas a tiro y no vuelven pronto, cazar; esto pasa por delante de comer
+   RULE 8 : IF caza IS alguno AND revertir IS tarde AND amenaza IS NOT inminente THEN cazar IS mucho, recolectar IS poco;
+   RULE 9 : IF caza IS ninguno THEN cazar IS poco;
+
+   // el cebo, sólo con los fantasmas lejos (si se acercan manda la huida, como en la V3):
+   // con dos fantasmas en la cadena, esperar junto a la pill mientras haya paciencia
+   RULE 11 : IF cebo IS bueno AND amenaza IS lejos AND espera IS poca THEN esperarCebo IS mucho, recolectar IS poco;
+   // con tres o más, o cuando la espera ya es larga, comérsela
+   RULE 12 : IF (cebo IS excelente OR (cebo IS bueno AND espera IS mucha)) AND amenaza IS lejos THEN comerCebo IS mucho, recolectar IS poco;
+   RULE 13 : IF (cebo IS excelente OR (cebo IS bueno AND espera IS mucha)) AND amenaza IS lejos THEN esperarCebo IS poco;
+   // sin cebo que valga la pena, ni esperar ni ir a por él
+   RULE 14 : IF cebo IS nada THEN esperarCebo IS poco, comerCebo IS poco;
+   // mientras se espera, comerlo vale poco (sin esto comerCebo caía a su DEFAULT: un hueco en la curva)
+   // (desde la v3: sólo con el fantasma lejos; si no, tapaba a la regla 17)
+   RULE 15 : IF cebo IS bueno AND espera IS poca AND amenaza IS lejos THEN comerCebo IS poco;
+   // el fantasma ya viene y la cadena vale dos o más: ahora (pasa por delante de evadir)
+   RULE 17 : IF amenaza IS cerca AND cebo IS NOT nada THEN comerCebo IS mucho, evadir IS algo;
+   RULE 18 : IF amenaza IS cerca AND cebo IS NOT nada THEN esperarCebo IS poco, recolectar IS poco;
+
+   // v14: no queda ruta segura pero el fantasma aún no está encima: hacia la zona libre más grande
+   RULE 26 : IF margen IS nulo AND amenaza IS NOT inminente THEN territorio IS mucho, escapar IS algo;
+   RULE 27 : IF margen IS NOT nulo OR amenaza IS inminente THEN territorio IS poco;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

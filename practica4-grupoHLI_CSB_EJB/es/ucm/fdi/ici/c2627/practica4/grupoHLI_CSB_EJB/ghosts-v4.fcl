@@ -1,0 +1,203 @@
+FUNCTION_BLOCK Ghost
+
+VAR_INPUT
+	pacman           : REAL;
+	distPeligro      : REAL;
+	ppill            : REAL;
+	distPP           : REAL;
+	comestible       : REAL;
+	margenBloqueo    : REAL;
+	soyMejorBloqueo  : REAL;
+	margenCorte      : REAL;
+	soyMejorCorte    : REAL;
+	margenCierre     : REAL;
+	soyMejorCierre   : REAL;
+	puestoCercania   : REAL;
+	tieneRefugio     : REAL;
+	estabaBloqueando : REAL;
+END_VAR
+
+VAR_OUTPUT
+	perseguir      : REAL;
+	huidaEficiente : REAL;
+	dispersarse    : REAL;
+	huirDePP       : REAL;
+	cerrarPaso     : REAL;
+	interceptar    : REAL;
+	cazar          : REAL;
+	vigilarPP      : REAL;
+END_VAR
+
+FUZZIFY pacman
+	TERM cerca := (0, 1) (15, 1) (35, 0);
+	TERM media := trian 20 45 70;
+	TERM lejos := (55, 0) (80, 1) (150, 1);
+END_FUZZIFY
+
+FUZZIFY distPeligro
+	TERM cerca := (0, 1) (15, 1) (35, 0);
+	TERM media := trian 20 45 70;
+	TERM lejos := (55, 0) (80, 1) (150, 1);
+END_FUZZIFY
+
+FUZZIFY ppill
+	TERM cerca := (0, 1) (15, 1) (35, 0);
+	TERM media := trian 30 50 70;
+	TERM lejos := (55, 0) (80, 1) (150, 1);
+END_FUZZIFY
+
+FUZZIFY distPP
+	TERM cerca := (0, 1) (20, 1) (45, 0);
+	TERM media := trian 30 55 80;
+	TERM lejos := (65, 0) (90, 1) (150, 1);
+END_FUZZIFY
+
+FUZZIFY comestible
+	TERM no    := (0, 1) (1, 0);
+	TERM si    := (0, 0) (1, 1) (200, 1);
+	TERM poco  := (0, 0) (1, 1) (20, 1) (45, 0);
+	TERM mucho := (25, 0) (50, 1) (200, 1);
+END_FUZZIFY
+
+FUZZIFY margenBloqueo
+	TERM negativo := (-50, 1) (0, 1) (2, 0);
+	TERM positivo := (0, 0) (3, 1) (50, 1);
+END_FUZZIFY
+
+FUZZIFY soyMejorBloqueo
+	TERM no := (0, 1) (0.5, 0);
+	TERM si := (0.5, 0) (1, 1);
+END_FUZZIFY
+
+FUZZIFY margenCorte
+	TERM negativo := (-50, 1) (0, 1) (2, 0);
+	TERM positivo := (0, 0) (2, 1) (50, 1);
+END_FUZZIFY
+
+FUZZIFY soyMejorCorte
+	TERM no := (0, 1) (0.5, 0);
+	TERM si := (0.5, 0) (1, 1);
+END_FUZZIFY
+
+FUZZIFY margenCierre
+	TERM negativo := (-50, 1) (-1, 1) (0, 0);
+	TERM positivo := (-1, 0) (0, 1) (50, 1);
+END_FUZZIFY
+
+FUZZIFY soyMejorCierre
+	TERM no := (0, 1) (0.5, 0);
+	TERM si := (0.5, 0) (1, 1);
+END_FUZZIFY
+
+FUZZIFY puestoCercania
+	TERM primero := (1, 1) (1.5, 0);
+	TERM otro    := (1.5, 0) (2, 1) (4, 1);
+END_FUZZIFY
+
+FUZZIFY tieneRefugio
+	TERM no := (0, 1) (0.5, 0);
+	TERM si := (0.5, 0) (1, 1);
+END_FUZZIFY
+
+FUZZIFY estabaBloqueando
+	TERM no := (0, 1) (0.5, 0);
+	TERM si := (0.5, 0) (1, 1);
+END_FUZZIFY
+
+DEFUZZIFY perseguir
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY huidaEficiente
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY dispersarse
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY huirDePP
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY cerrarPaso
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY interceptar
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY cazar
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY vigilarPP
+	TERM poco  := (0, 1) (4, 0);
+	TERM algo  := trian 2 5 8;
+	TERM mucho := (6, 0) (10, 1);
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK reglas
+	AND : MIN;
+	ACT : MIN;
+	ACCU : MAX;
+
+	// ---- CAZA BASE (no comestible) ------------------------------------------------
+	RULE 1 : IF comestible IS no THEN perseguir IS mucho;
+
+	// ---- SUPERVIVENCIA SIENDO COMESTIBLE ------------------------------------------
+	RULE 2 : IF comestible IS si THEN huidaEficiente IS mucho;
+	RULE 3 : IF comestible IS mucho AND distPeligro IS lejos THEN dispersarse IS mucho, huidaEficiente IS poco;
+
+	// ---- PELIGRO POR POWER PILL (no comestible) -----------------------------------
+	RULE 4 : IF comestible IS no AND ppill IS cerca AND distPP IS cerca THEN huirDePP IS mucho, perseguir IS poco;
+
+	// ---- CAZA COORDINADA (no comestible, sin peligro inmediato de PP) -------------
+	// R5-R6: cerrar salida de pasillo si soy el mejor situado y hay margen
+	RULE 5 : IF comestible IS no AND ppill IS NOT cerca AND margenCierre IS positivo AND soyMejorCierre IS si THEN cerrarPaso IS mucho, perseguir IS poco;
+	RULE 6 : IF comestible IS no AND ppill IS NOT cerca AND margenCierre IS positivo AND soyMejorCierre IS si THEN cazar IS poco;
+
+	// R7-R8: interceptar camino por delante si no soy el perseguidor más cercano
+	RULE 7 : IF comestible IS no AND ppill IS NOT cerca AND puestoCercania IS otro AND margenCorte IS positivo AND soyMejorCorte IS si THEN interceptar IS mucho, perseguir IS poco;
+	RULE 8 : IF comestible IS no AND ppill IS NOT cerca AND puestoCercania IS otro AND margenCorte IS positivo AND soyMejorCorte IS si THEN cazar IS poco;
+
+	// R9: solo un secundario cubre una PP rondada a media distancia (el líder sigue apretando)
+	RULE 9 : IF comestible IS no AND puestoCercania IS otro AND ppill IS media AND distPP IS cerca THEN vigilarPP IS mucho, perseguir IS poco;
+
+	// R10: flanquear solo cuando la PP está lejos para no meterse en la boca del lobo
+	RULE 10 : IF comestible IS no AND ppill IS lejos AND puestoCercania IS otro AND pacman IS media THEN cazar IS mucho, perseguir IS poco;
+
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
